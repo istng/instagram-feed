@@ -20,12 +20,21 @@ userIdArgHelp    = 'telegram user id'
 
 startMsg           = 'Hello! Im the Instagram Feed bot, you can find out what I can do with /help'
 helpMsg            = 'Here is going to be a brief description of what I can do.' #maybe make functions to ask what each one does separately
-addedAccounstMsg   = 'Accounts successfully added!'
-addedKeywordsMsg   = 'Keywords successfully added!'
+addedAccounstMsg   = '%s accounts added!'
+addedKeywordsMsg   = '%s keywords added!'
 deletedAccountsMsg = 'Accounts successfully deleted.'
 deletedKeywordsMsg = 'Keywords successfully deleted.'
 enabledAllMsg      = 'All posts enabled!'
 enabledKeywordsMsg = 'Only posts containing keywords enabled!'
+noAccountsGivenMsg = 'No accounts were given.'
+invalidAccountMsg  = 'The account "%s" wasnt added because its invalid.'
+noKeywordsGivenMsg = 'No keywords were given.'
+invalidKeywordMsg  = 'The keyword "%s" wasnt added because its too long.'
+accountNotPresent  = 'The account "%s" is not present, please add it before assigning its keywords.'
+
+
+validUsername = '^([A-Za-z0-9_](?:(?:[A-Za-z0-9_]|(?:\.(?!\.))){0,28}(?:[A-Za-z0-9_]))?)$'
+validKeyword  = '^[^\s]{1,15}$'
 
 
 checkTimeDefault = 24 #in hours
@@ -41,6 +50,10 @@ def parse_input():
     return args
 
 
+def is_a(validRegex, text):
+    return re.compile(validRegex).match(text)
+
+
 def start(bot, update):
     bot.send_message(chat_id=update.message.chat_id, text=startMsg)
 
@@ -50,19 +63,42 @@ def help(bot, update):
 
 
 def add_accounts(bot, update):
-    bot.send_message(chat_id=update.message.chat_id, text='hola')
-    accounts = update.message.text.split()[1::]
+    chatId    = update.message.chat_id
+    accounts  = update.message.text.split()[1::]
+    amntAdded = 'All'
+    if len(accounts) == 0:
+        bot.send_message(chat_id=chatId, text=noAccountsGivenMsg)
+        amntAdded = 'None'
+        return
     for account in accounts:
-         if account not in accountsFeed: accountsFeed[account] = igaf.account(account, datetime(year=2018, month=3, day=1))
-    bot.send_message(chat_id=update.message.chat_id, text=addedAccounstMsg)
+        if not is_a(validUsername, account):
+            bot.send_message(chat_id=chatId, text=invalidAccountMsg%(account))
+            amntAdded = 'Rest of'
+        elif account not in accountsFeed:
+            accountsFeed[account] = igaf.account(account, datetime(year=2018, month=3, day=1))
+    bot.send_message(chat_id=chatId, text=addedAccounstMsg%(amntAdded))
 
 
 def add_keywords(bot, update):
+    chatId  = update.message.chat_id
     userMsg = update.message.text.split()[1::]
     account = userMsg[0]
     keywords = set(userMsg[1::])
-    accountsFeed[account].add_keywords(keywords)
-    bot.send_message(chat_id=update.message.chat_id, text=addedKeywordsMsg)
+    amntAdded = 'All'
+    if len(keywords) == 0:
+        bot.send_message(chat_id=chatId, text=noKeywordsGivenMsg)
+        amntAdded = 'None'
+        return
+    for keyword in keywords:
+        if not is_a(validKeyword, keyword):
+            bot.send_message(chat_id=chatId, text=invalidKeywordMsg%(keyword))
+            amntAdded = 'Rest of'
+        elif account in accountsFeed:
+            accountsFeed[account].add_keyword(keyword)
+        else:
+            bot.send_message(chat_id=chatId, text=accountNotPresent%(account))
+            return
+    bot.send_message(chat_id=chatId, text=addedKeywordsMsg%(amntAdded))
 
 
 def list_accounts(bot, update):
@@ -71,15 +107,22 @@ def list_accounts(bot, update):
 
 
 def list_keywords(bot, update):
-    account = update.message.text.split()[1::]
-    keywords = accountsFeed[account].get_keywords()
-    bot.send_message(chat_id=update.message.chat_id, text=keywords)    
+    account = update.message.text.split()[1]
+    if account in accountsFeed:
+        keywords = ' '.join(accountsFeed[account].get_keywords())
+        bot.send_message(chat_id=update.message.chat_id, text=keywords)
+    else:
+        bot.send_message(chat_id=chatId, text=invalidAccountMsg%(account))
 
 
-def delete_account(bot, update):
+
+def delete_accounts(bot, update):
     accounts = update.message.text.split()[1::]
     for account in accounts:
-         if account in accountsFeed: del accountsFeed[account]
+        if account in accountsFeed:
+            del accountsFeed[account]
+        else:
+            bot.send_message(chat_id=chatId, text=invalidAccountMsg%(account))    
     bot.send_message(chat_id=update.message.chat_id, text=deletedAccountsMsg)
 
 
@@ -87,20 +130,31 @@ def delete_keywords(bot, update):
     userMsg = update.message.text.split()[1::]
     account = userMsg[0]
     keywords = set(userMsg[1::])
-    accountsFeed[account].delete_keywords(keywords)
-    bot.send_message(chat_id=update.message.chat_id, text=deletedKeywordsMsg)
+    if account in accountsFeed:
+        accountsFeed[account].delete_keywords(keywords)
+        bot.send_message(chat_id=update.message.chat_id, text=deletedKeywordsMsg)
+    else:
+        bot.send_message(chat_id=chatId, text=invalidAccountMsg%(account))
 
 
 def enable_all(bot, update):
+    chatId = update.message.chat_id
     account = update.message.text.split()[1::]
-    if accountsFeed[account].are_keywords_enabled(): accountsFeed[account].toggle_keywords()
-    bot.send_message(chat_id=update.message.chat_id, text=enabledAllMsg)
+    if account in accountsFeed:
+        if accountsFeed[account].are_keywords_enabled(): accountsFeed[account].toggle_keywords()
+        bot.send_message(chat_id=chatId, text=enabledAllMsg)
+    else:
+        bot.send_message(chat_id=chatId, text=invalidAccountMsg%(account))
 
 
 def enable_keywords(bot, update):
+    chatId = update.message.chat_id
     account = update.message.text.split()[1::]
-    if not accountsFeed[account].are_keywords_enabled(): accountsFeed[account].toggle_keywords()
-    bot.send_message(chat_id=update.message.chat_id, text=enabledKeywordsMsg)
+    if account in accountsFeed:
+        if not accountsFeed[account].are_keywords_enabled(): accountsFeed[account].toggle_keywords()
+        bot.send_message(chat_id=chatId, text=enabledKeywordsMsg)
+    else:
+        bot.send_message(chat_id=chatId, text=invalidAccountMsg%(account))
 
 
 def check_feed(bot, job):
@@ -127,11 +181,11 @@ def main():
     updater.dispatcher.add_handler(MessageHandler(Filters.text, check_feed_job, pass_job_queue=True))
     updater.dispatcher.add_handler(CommandHandler("start", start))
     updater.dispatcher.add_handler(CommandHandler("help", help))
-    updater.dispatcher.add_handler(CommandHandler("addaccount", add_accounts))
+    updater.dispatcher.add_handler(CommandHandler("addaccounts", add_accounts))
     updater.dispatcher.add_handler(CommandHandler("addkeywords", add_keywords))
     updater.dispatcher.add_handler(CommandHandler("listaccounts", list_accounts))
     updater.dispatcher.add_handler(CommandHandler("listkeywords", list_keywords))
-    updater.dispatcher.add_handler(CommandHandler("delaccount", delete_account))
+    updater.dispatcher.add_handler(CommandHandler("delaccounts", delete_accounts))
     updater.dispatcher.add_handler(CommandHandler("delkeywords", delete_keywords))
     updater.dispatcher.add_handler(CommandHandler("enableall", enable_all))
     updater.dispatcher.add_handler(CommandHandler("enablekeywords", enable_keywords))

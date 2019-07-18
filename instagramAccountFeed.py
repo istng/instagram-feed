@@ -4,15 +4,16 @@ from selenium.webdriver import Firefox
 
 
 class account:
+
+    postUrl    = 'https://www.instagram.com/p/'
+    scrollDown = 'window.scrollTo(0, document.body.scrollHeight);'
+
     def __init__(self, name, date=datetime.now(), keywordsEnabled=True):
         self._name = name
         self._keywords = set()
         self._lastDate = date
         self._keywordsEnabled = keywordsEnabled
-
         self._accountUrl = 'https://www.instagram.com/'+name+'/'
-        self._postUrl    = 'https://www.instagram.com/p/'
-        self._scrollDown = 'window.scrollTo(0, document.body.scrollHeight);'
 
 
     def get_name(self):
@@ -26,6 +27,10 @@ class account:
     def are_keywords_enabled(self):
         return self._keywordsEnabled
 
+
+    def add_keyword(self, keyword):
+        self._keywords.add(keyword)
+        
 
     def add_keywords(self, keywords):
         self._keywords.update(keywords)
