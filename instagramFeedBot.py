@@ -19,7 +19,7 @@ userIdArgHelp    = 'telegram user id'
 
 
 startMsg           = 'Hello! Im the Instagram Feed bot, you can find out what I can do with /help'
-helpMsg            = 'Here is going to be a brief description of what I can do.' #maybe make functions to ask what each one does separately
+helpMsg            = 'This is a list of the functions I know:\n'
 addedAccounstMsg   = '%s accounts added!'
 addedKeywordsMsg   = '%s keywords added!'
 deletedAccountsMsg = 'Accounts successfully deleted.'
@@ -31,6 +31,8 @@ invalidAccountMsg  = 'The account "%s" wasnt added because its invalid.'
 noKeywordsGivenMsg = 'No keywords were given.'
 invalidKeywordMsg  = 'The keyword "%s" wasnt added because its too long.'
 accountNotPresent  = 'The account "%s" is not present, please add it before assigning its keywords.'
+
+functionsHelp = "/addaccounts username1 username2 username3 ...\nAdds one or more accounts by their usernames.\n\n/addkeywords username keyword1 keyword2 ...\nAdds one or more keywords to the username's account.\n\n/deleteaccounts username1 username2 username3 ...\nDeletes all accounts with given usernames.\n\n/deletekeywords username keyword1 keyword2 ...\nDeletes all given keywords from given username's account.\n\n/enableall username\nEnables all posts from username's account.\n\n/enablekeywords username\nEnables only posts containing the username's account keywords."
 
 
 validUsername = '^([A-Za-z0-9_](?:(?:[A-Za-z0-9_]|(?:\.(?!\.))){0,28}(?:[A-Za-z0-9_]))?)$'
@@ -59,7 +61,7 @@ def start(bot, update):
 
 
 def help(bot, update):
-    bot.send_message(chat_id=update.message.chat_id, text=helpMsg)
+    bot.send_message(chat_id=update.message.chat_id, text=helpMsg+functionsHelp)
 
 
 def add_accounts(bot, update):
