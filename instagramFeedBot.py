@@ -32,11 +32,13 @@ noKeywordsGivenMsg = 'No keywords were given.'
 invalidKeywordMsg  = 'The keyword "%s" wasnt added because its too long.'
 accountNotPresent  = 'The account "%s" is not present, please add it before assigning its keywords.'
 
-functionsHelp = "/addaccounts username1 username2 username3 ...\nAdds one or more accounts by their usernames.\n\n/addkeywords username keyword1 keyword2 ...\nAdds one or more keywords to the username's account.\n\n/deleteaccounts username1 username2 username3 ...\nDeletes all accounts with given usernames.\n\n/deletekeywords username keyword1 keyword2 ...\nDeletes all given keywords from given username's account.\n\n/enableall username\nEnables all posts from username's account.\n\n/enablekeywords username\nEnables only posts containing the username's account keywords."
+functionsHelp = "/addaccounts username1 username2 username3 ...\nAdds one or more accounts by their usernames.\n\n/addkeywords username keyword1 keyword2 ...\nAdds one or more keywords to the username's account.\n\n/deleteaccounts username1 username2 username3 ...\nDeletes all accounts with given usernames.\n\n/deletekeywords username keyword1 keyword2 ...\nDeletes all given keywords from given username's account.\n\n/enableall username\nEnables all posts from username's account.\n\n/enablekeywords username\nEnables only posts containing the username's account keywords.\n\n/listaccounts\nI'll send a list of all present accounts.\n\n/listkeywords username\nI'll send a list of all the keywords of that username's account."
 
 
-validUsername = '^([A-Za-z0-9_](?:(?:[A-Za-z0-9_]|(?:\.(?!\.))){0,28}(?:[A-Za-z0-9_]))?)$'
-validKeyword  = '^[^\s]{1,15}$'
+validUsername   = '^([A-Za-z0-9_](?:(?:[A-Za-z0-9_]|(?:\.(?!\.))){0,28}(?:[A-Za-z0-9_]))?)$'
+validKeyword    = '^[^\s]{1,15}$'
+validAccCommand = validUsername[0:-1]+'(\s'+validUsername[2:-1]+'*$'
+validKeyCommand = validUsername[0:-1]+
 
 
 checkTimeDefault = 24 #in hours
@@ -115,7 +117,6 @@ def list_keywords(bot, update):
         bot.send_message(chat_id=update.message.chat_id, text=keywords)
     else:
         bot.send_message(chat_id=chatId, text=invalidAccountMsg%(account))
-
 
 
 def delete_accounts(bot, update):

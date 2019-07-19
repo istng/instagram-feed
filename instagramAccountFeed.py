@@ -8,16 +8,16 @@ class account:
     postUrl    = 'https://www.instagram.com/p/'
     scrollDown = 'window.scrollTo(0, document.body.scrollHeight);'
 
-    def __init__(self, name, date=datetime.now(), keywordsEnabled=True):
-        self._name = name
+    def __init__(self, username, date=datetime.now(), keywordsEnabled=True):
+        self._username = username
         self._keywords = set()
         self._lastDate = date
         self._keywordsEnabled = keywordsEnabled
-        self._accountUrl = 'https://www.instagram.com/'+name+'/'
+        self._accountUrl = 'https://www.instagram.com/'+username+'/'
 
 
-    def get_name(self):
-        return self._name
+    def get_username(self):
+        return self._username
 
 
     def toggle_keywords(self):
@@ -65,7 +65,7 @@ class account:
         post = 'https://www.instagram.com/p/'
         post_links = []
         while len(post_links) < numberOfPublications:
-            links = [a.get_attribute('href') for a in browser.find_elements_by_tag_name('a')]
+            links = [a.get_attribute('href') for a in browser.find_elements_by_tag_username('a')]
             for link in links:
                 if post in link and link not in post_links:
                     post_links.append(link)
