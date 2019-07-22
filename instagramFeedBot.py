@@ -2,10 +2,9 @@ import telegram
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, InlineQueryHandler
 from telegram.ext import BaseFilter, MessageHandler, Filters
 import logging
-from datetime import datetime, timedelta
 import argparse
-import re
-import instagramAccountFeed as igaf
+from datetime import datetime, timedelta
+import instagramFeeder
 
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -14,31 +13,17 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 argumentsDescMsg = 'Bot initialization parameters.'
 tokenArgHelp     = 'telegram token'
+economyDBHelp    = 'economy DB path'
 checkTimeArgHelp = 'time to check for new publications'
 userIdArgHelp    = 'telegram user id'
 
 
 startMsg           = 'Hello! Im the Instagram Feed bot, you can find out what I can do with /help'
 helpMsg            = 'This is a list of the functions I know:\n'
-addedAccounstMsg   = '%s accounts added!'
-addedKeywordsMsg   = '%s keywords added!'
-deletedAccountsMsg = 'Accounts successfully deleted.'
-deletedKeywordsMsg = 'Keywords successfully deleted.'
-enabledAllMsg      = 'All posts enabled!'
-enabledKeywordsMsg = 'Only posts containing keywords enabled!'
-noAccountsGivenMsg = 'No accounts were given.'
-invalidAccountMsg  = 'The account "%s" wasnt added because its invalid.'
-noKeywordsGivenMsg = 'No keywords were given.'
-invalidKeywordMsg  = 'The keyword "%s" wasnt added because its too long.'
-accountNotPresent  = 'The account "%s" is not present, please add it before assigning its keywords.'
+noParamsGiven      = 'Please send the command with valid parameters.'
+
 
 functionsHelp = "/addaccounts username1 username2 username3 ...\nAdds one or more accounts by their usernames.\n\n/addkeywords username keyword1 keyword2 ...\nAdds one or more keywords to the username's account.\n\n/deleteaccounts username1 username2 username3 ...\nDeletes all accounts with given usernames.\n\n/deletekeywords username keyword1 keyword2 ...\nDeletes all given keywords from given username's account.\n\n/enableall username\nEnables all posts from username's account.\n\n/enablekeywords username\nEnables only posts containing the username's account keywords.\n\n/listaccounts\nI'll send a list of all present accounts.\n\n/listkeywords username\nI'll send a list of all the keywords of that username's account."
-
-
-validUsername   = '^([A-Za-z0-9_](?:(?:[A-Za-z0-9_]|(?:\.(?!\.))){0,28}(?:[A-Za-z0-9_]))?)$'
-validKeyword    = '^[^\s]{1,15}$'
-validAccCommand = validUsername[0:-1]+'(\s'+validUsername[2:-1]+'*$'
-validKeyCommand = validUsername[0:-1]+
 
 
 checkTimeDefault = 24 #in hours
@@ -48,14 +33,87 @@ def parse_input():
     parser = argparse.ArgumentParser(description=argumentsDescMsg, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     
     parser.add_argument('token', metavar='TOKEN', type=str, help=tokenArgHelp)
+    parser.add_argument('economyDB', metavar='ECONOMY DB', type=str, help=economyDBHelp)
     parser.add_argument('-ct', metavar='CHECK TIME', type=int, default=checkTimeDefault, help=checkTimeArgHelp)
     parser.add_argument('-uid', metavar='USER ID', type=int, help=userIdArgHelp)
     args = parser.parse_args()
     return args
 
 
-def is_a(validRegex, text):
-    return re.compile(validRegex).match(text)
+#keywords = ' '.join(instagramFeed.get_keywords(userId, username))
+#accountsNames = '\n'.join(instagramFeed.get_usernames(userId)) what if the userId is new and there are no accounts?
+def process(ret):
+    return
+
+
+def check_parameters(func):
+    def check_and_call(bot, update):
+            chatId = update.message.chat_id
+            params = update.message.text.split()[1::]
+            if len(params) == 0:
+                bot.send_message(chat_id=chatId, text=noParamsGiven)
+            else:
+                ret = func(bot, update)
+                replyMsg = process(ret)
+                bot.send_message(chat_id=chatId, text=replyMsg)
+    return check_and_call
+
+
+@check_parameters
+def add_accounts(bot, update):
+    userId = update.message.chat_id
+    usernames = update.message.text.split()[1::]
+    return instagramFeed.add_accounts(userId, usernames)
+
+
+@check_parameters
+def add_keywords(bot, update):
+    userId  = update.message.chat_id
+    userMsg = update.message.text.split()[1::]
+    username = userMsg[0]
+    keywords = userMsg[1::]
+    return instagramFeed.add_keywords(userId, username, keywords)
+
+
+@check_parameters
+def list_accounts(bot, update):
+    userId = update.message.chat_id
+    return instagramFeed.list_usernames(userId)
+
+
+@check_parameters
+def list_keywords(bot, update):
+    userId = update.message.chat_id
+    username = update.message.text.split()[1]
+    return instagramFeed.list_keywords(userId, username)
+
+
+@check_parameters
+def delete_accounts(bot, update):
+    userId = update.message.chat_id
+    usernames = update.message.text.split()[1::]
+    return instagramFeed.delete_accounts(userId, usernames)
+
+
+@check_parameters
+def delete_keywords(bot, update):
+    userId  = update.message.chat_id
+    userMsg = update.message.text.split()[1::]
+    username = userMsg[0]
+    keywords = userMsg[1::]
+    return instagramFeed.delete_keywords(userId, username, keywords)
+
+
+def enable_all(bot, update):
+    chatId = update.message.chat_id
+    username = update.message.text.split()[1::]
+    return instagramFeed.enable_all(userId, username)
+    
+
+def enable_keywords(bot, update):
+    chatId = update.message.chat_id
+    username = update.message.text.split()[1::]
+    return instagramFeed.enable_keywords(userId, username)
 
 
 def start(bot, update):
@@ -64,100 +122,6 @@ def start(bot, update):
 
 def help(bot, update):
     bot.send_message(chat_id=update.message.chat_id, text=helpMsg+functionsHelp)
-
-
-def add_accounts(bot, update):
-    chatId    = update.message.chat_id
-    accounts  = update.message.text.split()[1::]
-    amntAdded = 'All'
-    if len(accounts) == 0:
-        bot.send_message(chat_id=chatId, text=noAccountsGivenMsg)
-        amntAdded = 'None'
-        return
-    for account in accounts:
-        if not is_a(validUsername, account):
-            bot.send_message(chat_id=chatId, text=invalidAccountMsg%(account))
-            amntAdded = 'Rest of'
-        elif account not in accountsFeed:
-            accountsFeed[account] = igaf.account(account, datetime(year=2018, month=3, day=1))
-    bot.send_message(chat_id=chatId, text=addedAccounstMsg%(amntAdded))
-
-
-def add_keywords(bot, update):
-    chatId  = update.message.chat_id
-    userMsg = update.message.text.split()[1::]
-    account = userMsg[0]
-    keywords = set(userMsg[1::])
-    amntAdded = 'All'
-    if len(keywords) == 0:
-        bot.send_message(chat_id=chatId, text=noKeywordsGivenMsg)
-        amntAdded = 'None'
-        return
-    for keyword in keywords:
-        if not is_a(validKeyword, keyword):
-            bot.send_message(chat_id=chatId, text=invalidKeywordMsg%(keyword))
-            amntAdded = 'Rest of'
-        elif account in accountsFeed:
-            accountsFeed[account].add_keyword(keyword)
-        else:
-            bot.send_message(chat_id=chatId, text=accountNotPresent%(account))
-            return
-    bot.send_message(chat_id=chatId, text=addedKeywordsMsg%(amntAdded))
-
-
-def list_accounts(bot, update):
-    accountsNames = '\n'.join(accountsFeed.keys())
-    bot.send_message(chat_id=update.message.chat_id, text=accountsNames)
-
-
-def list_keywords(bot, update):
-    account = update.message.text.split()[1]
-    if account in accountsFeed:
-        keywords = ' '.join(accountsFeed[account].get_keywords())
-        bot.send_message(chat_id=update.message.chat_id, text=keywords)
-    else:
-        bot.send_message(chat_id=chatId, text=invalidAccountMsg%(account))
-
-
-def delete_accounts(bot, update):
-    accounts = update.message.text.split()[1::]
-    for account in accounts:
-        if account in accountsFeed:
-            del accountsFeed[account]
-        else:
-            bot.send_message(chat_id=chatId, text=invalidAccountMsg%(account))    
-    bot.send_message(chat_id=update.message.chat_id, text=deletedAccountsMsg)
-
-
-def delete_keywords(bot, update):
-    userMsg = update.message.text.split()[1::]
-    account = userMsg[0]
-    keywords = set(userMsg[1::])
-    if account in accountsFeed:
-        accountsFeed[account].delete_keywords(keywords)
-        bot.send_message(chat_id=update.message.chat_id, text=deletedKeywordsMsg)
-    else:
-        bot.send_message(chat_id=chatId, text=invalidAccountMsg%(account))
-
-
-def enable_all(bot, update):
-    chatId = update.message.chat_id
-    account = update.message.text.split()[1::]
-    if account in accountsFeed:
-        if accountsFeed[account].are_keywords_enabled(): accountsFeed[account].toggle_keywords()
-        bot.send_message(chat_id=chatId, text=enabledAllMsg)
-    else:
-        bot.send_message(chat_id=chatId, text=invalidAccountMsg%(account))
-
-
-def enable_keywords(bot, update):
-    chatId = update.message.chat_id
-    account = update.message.text.split()[1::]
-    if account in accountsFeed:
-        if not accountsFeed[account].are_keywords_enabled(): accountsFeed[account].toggle_keywords()
-        bot.send_message(chat_id=chatId, text=enabledKeywordsMsg)
-    else:
-        bot.send_message(chat_id=chatId, text=invalidAccountMsg%(account))
 
 
 def check_feed(bot, job):
@@ -176,8 +140,7 @@ def main():
     global botArgs
     botArgs = parse_input()
 
-    global accountsFeed
-    accountsFeed = dict()
+    instagramFeed.bind_db('sqlite', botArgs.economyDB)
 
 
     updater = Updater(botArgs.token)
