@@ -12,14 +12,14 @@ class Feedee(db.Entity):
 
 class Account(db.Entity):
     username        = Required(str)
-    #astRestartDate = Required(datetime)
-    #keywordsEnabled = Required(bool)
+    astRestartDate  = Required(datetime)
+    keywordsEnabled = Required(bool)
     keywords        = Set('Keyword')
     feedee          = Required(Feedee)
     PrimaryKey(username, feedee)
 
 
 class Keyword(db.Entity):
-    word = Required(str)
+    word    = Required(str)
     account = Required('Account')
     PrimaryKey(word, account)
