@@ -16,8 +16,8 @@ def bind_db(provider, path):
 @valid_add_account_params
 @db_session
 def add_account(feedId, username):
-    feedee = Feedee[feedIde]
-    Account(username=username, feedee=feedee)
+    feedee = Feedee[feedId]
+    Account(username=username, lastRestartDate=datetime(year=2018, month=3, day=1), keywordsEnabled=False, feedee=feedee)
     commit()
     return 0
 
@@ -35,8 +35,8 @@ def add_keyword(feedId, username, keyword):
 @valid_delete_account_params
 @db_session
 def delete_account(feedId, username):
-    feedee = Feedee[feedIde]
-    Account.get(feedee=Feedee[feedId], username=username).delete()
+    feedee = Feedee[feedId]
+    Account.get(username=username, feedee=feedee).delete()
     commit()
     return 0
 
@@ -46,13 +46,14 @@ def delete_account(feedId, username):
 def delete_keyword(feedId, username, keyword):
     feedee = Feedee[feedId]
     account = Account.get(username=username, feedee=feedee)
-    Keyword.get(word=keyword, account=Account.get(username=username, feedee=keyword.account.feedee)).delete()
+    Keyword.get(word=keyword, account=account).delete()
     commit()
     return 0
 
 
 @valid_list_accounts_params
-def list_accounts(feedId):
+@db_session
+def list_usernames(feedId):
     return select(a.username for a in Feedee[feedId].accounts)[:]
 
 
@@ -60,7 +61,7 @@ def list_accounts(feedId):
 @db_session
 def list_keywords(feedId, username):
     feedee = Feedee[feedId]
-    account = feedee.accounts.get(username=username, feedee=feedee)
+    account = Account.get(username=username, feedee=feedee)
     return select(k.word for k in account.keywords)[:]
 
 

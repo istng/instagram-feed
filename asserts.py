@@ -8,7 +8,7 @@ validKeyword    = '^[^\s]{1,15}$'
 
 @m.db_session
 def feedee_not_present_create(*args, **kwargs):
-    if not Feedee.exists(lambda feedee: feedee.feedId == args[0]):
+    if not m.Feedee.exists(lambda feedee: feedee.feedId == args[0]):
         m.Feedee(feedId=args[0])
 
 
@@ -22,29 +22,33 @@ def assert_valid_keyword(*args, **kwargs):
         raise ValueError('Invalid keyword: too long')
 
 
+@m.db_session
 def assert_account_existence(*args, **kwargs):
     feedee = m.Feedee[args[0]]
     if not m.Account.exists(lambda account: account.feedee == feedee and account.username == args[1]):
         raise ValueError('Account does not exists')     
 
 
+@m.db_session
 def assert_account_not_existence(*args, **kwargs):
     feedee = m.Feedee[args[0]]
     if m.Account.exists(lambda account: account.feedee == feedee and account.username == args[1]):
         raise ValueError('Account already exists')        
 
 
+@m.db_session
 def assert_keyword_existence(*args, **kwargs):
     feedee = m.Feedee[args[0]]
-    account = m.Account.get(username=arg[1], feedee=feedee)
-    if not Keyword.exists(lambda keyword: keyword.account == account and keyword.word == arg[2]):
+    account = m.Account.get(username=args[1], feedee=feedee)
+    if not m.Keyword.exists(lambda keyword: keyword.account == account and keyword.word == args[2]):
         raise ValueError('Keyword does not exists')   
 
 
+@m.db_session
 def assert_keyword_not_existence(*args, **kwargs):
     feedee = m.Feedee[args[0]]
-    account = m.Account.get(username=arg[1], feedee=feedee)
-    if Keyword.exists(lambda keyword: keyword.account == account and keyword.word == arg[2]):
+    account = m.Account.get(username=args[1], feedee=feedee)
+    if m.Keyword.exists(lambda keyword: keyword.account == account and keyword.word == args[2]):
         raise ValueError('Keyword already exists')
 
 
