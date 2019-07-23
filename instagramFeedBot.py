@@ -43,7 +43,7 @@ def parse_input():
 #keywords = ' '.join(instagramFeed.get_keywords(userId, username))
 #accountsNames = '\n'.join(instagramFeed.get_usernames(userId)) what if the userId is new and there are no accounts?
 def process_reply_msg(ret):
-    return
+    return str(ret)
 
 
 def check_user_msg_parameters(func):

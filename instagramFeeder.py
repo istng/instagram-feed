@@ -19,7 +19,7 @@ def add_account(feedId, username):
     feedee = Feedee[feedIde]
     Account(username=username, feedee=feedee)
     commit()
-    return #code of success
+    return 0
 
 
 @valid_add_keyword_params
@@ -29,7 +29,7 @@ def add_keyword(feedId, username, keyword):
     account = Account.get(username=username, feedee=feedee)
     Keyword(word=keyword, account=account)
     commit()
-    return #code of success
+    return 0
 
 
 @valid_delete_account_params
@@ -38,7 +38,7 @@ def delete_account(feedId, username):
     feedee = Feedee[feedIde]
     Account.get(feedee=Feedee[feedId], username=username).delete()
     commit()
-    return #code of success
+    return 0
 
 
 @valid_delete_keyword_params
@@ -48,7 +48,7 @@ def delete_keyword(feedId, username, keyword):
     account = Account.get(username=username, feedee=feedee)
     Keyword.get(word=keyword, account=Account.get(username=username, feedee=keyword.account.feedee)).delete()
     commit()
-    return #code of success
+    return 0
 
 
 @valid_list_accounts_params
@@ -67,39 +67,57 @@ def list_keywords(feedId, username):
 @valid_account_query_params
 @db_session
 def enable_all(feedId, username):
-    return
+    feedee = Feedee[feedId]
+    account = Account.get(username=username, feedee=feedee)
+    account.keywordsEnabled = False
+    return 0
 
 
 @valid_account_query_params
 @db_session
 def enable_keywords(feedId, username):
-    return
+    feedee = Feedee[feedId]
+    account = Account.get(username=username, feedee=feedee)
+    account.keywordsEnabled = True
+    return 0
 
 
 ###As of now, Pony does not provide bulk inserts
 def add_accounts(feedId, usernames):
-    #incremental code
+    errors = []
     for username in usernames:
-        add_account(feedId, username)
-    #return incremental code
+        try:
+            add_account(feedId, username)
+        except ValueError as e:
+            errors.append((username, e))
+    return errors
 
 
 def add_keywords(feedId, username, keywords):
-    #incremental code
+    errors = []
     for keyword in keywords:
-        add_account(feedId, username, keyword)
-    #return incremental code    
+        try:
+            add_keyword(feedId, username, keyword)
+        except ValueError as e:
+            errors.append((username, keyword, e))
+    return errors
 
 
 def delete_accounts(feedId, usernames):
-    #incremental code
+    errors = []
     for username in usernames:
-        delete_account(feedId, username)
-    #return incremental code
+        try:
+            delete_account(feedId, username)
+        except ValueError as e:
+            errors.append((username, e))
+    return errors
 
 
 def delete_keywords(feedId, username, keywords):
-    #incremental code
+    errors = []
     for keyword in keywords:
-        delete_account(feedId, username, keyword)
-    #return incremental code    
+        try:
+            delete_keyword(feedId, username, keyword)
+        except ValueError as e:
+            errors.append((username, keyword, e))
+    return errors
