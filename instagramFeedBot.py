@@ -86,9 +86,9 @@ def list_keywords(bot, update):
     userId = update.message.chat_id
     username = update.message.text.split()[1]
     try:
-    	return instagramFeeder.list_keywords(userId, username)
+        return instagramFeeder.list_keywords(userId, username)
     except ValueError as e:
-    	return [(username, e)]
+        return [(username, e)]
 
 
 @check_user_msg_parameters
@@ -128,10 +128,14 @@ def help(bot, update):
 
 
 def check_feed(bot, job):
-    for account in accountsFeed:
-        newPosts = accountsFeed[account].get_last_posts(1)
-        for post in newPosts:
-            job.context.message.reply_text(post)
+    feedees = instagramFeeder.list_feedees_ids()
+    for feedee in feedees:
+        #bot.send_message(chat_id=feedee, text='hola mostro, vos sos '+str(feedee))
+        usernames = instagramFeeder.list_usernames(feedee)
+        for username in usernames:
+            posts = instagramFeeder.get_last_posts(feedee, username, 1)
+            for post in posts:
+                job.context.message.reply_text(post)
 
 
 #it should enter always, not with the filter text...

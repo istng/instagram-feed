@@ -4,6 +4,8 @@ import time
 from models import *
 from asserts import *
 
+
+accountUrl = 'https://www.instagram.com/%s/'
 postUrl    = 'https://www.instagram.com/p/'
 scrollDown = 'window.scrollTo(0, document.body.scrollHeight);'    
 
@@ -122,3 +124,46 @@ def delete_keywords(feedId, username, keywords):
         except ValueError as e:
             errors.append((username, keyword, e))
     return errors
+
+
+@db_session
+def list_feedees_ids():
+    return select(f.feedId for f in Feedee)[:]
+
+
+@valid_account_query_params
+def get_posts(feedId, username, numberOfPublications):
+    url = "https://www.instagram.com/" + username + "/"
+    browser = Firefox()
+    browser.get(url)
+    post = 'https://www.instagram.com/p/'
+    post_links = []
+    while len(post_links) < numberOfPublications:
+        links = [a.get_attribute('href') for a in browser.find_elements_by_tag_name('a')]
+        for link in links:
+            if post in link and link not in post_links:
+                post_links.append(link)
+        scroll_down = "window.scrollTo(0, document.body.scrollHeight);"
+        browser.execute_script(scroll_down)
+        time.sleep(10)
+    else:
+        browser.close()
+        return post_links[:numberOfPublications]
+
+
+def get_last_posts(feedId, username, numberOfPublications=10):
+    urls = get_posts(feedId, username, numberOfPublications)
+    browser = Firefox()
+    post_details = []
+    for link in urls:
+        browser.get(link)
+        age = browser.find_element_by_css_selector('a time').text
+        post_details.append(link)
+        time.sleep(10)
+    browser.close()
+    return post_details
+
+
+"""        if ((not self.are_keywords_enabled()) or self.contains_any_keyword(comment)) and self.is_newer(date):
+            dates.append(date)
+            post_details.append(link)"""
