@@ -9,24 +9,6 @@ validUsername   = '^([A-Za-z0-9_](?:(?:[A-Za-z0-9_]|(?:\.(?!\.))){0,28}(?:[A-Za-
 validKeyword    = '^[^\s]{1,15}$'
 
 
-def check_feed_id(func):
-    @db_session
-    def if_not_present_create(*args, **kwargs):
-        if not Feedee.exists(lambda feedee: feedee.feedId == args[0]):
-            Feedee(feedId=args[0])
-        return func(*args, **kwargs)
-    return if_not_present_create
-
-#too many decoratos... should use another strategy
-def check_user_name(func):
-    @db_session
-    def check_and_continue(*args, **kwargs):
-        if not re.compile(validUsername).match(args[1]):
-            return #code of invalid username
-        return func(*args, **kwargs)
-    return check_and_continue
-
-
 postUrl    = 'https://www.instagram.com/p/'
 scrollDown = 'window.scrollTo(0, document.body.scrollHeight);'    
 
@@ -36,17 +18,46 @@ def bind_db(provider, path):
     db.generate_mapping(create_tables=True)
 
 
+def check_feed_id(func):
+    @db_session
+    def if_not_present_create(*args, **kwargs):
+        if not Feedee.exists(lambda feedee: feedee.feedId == args[0]):
+            Feedee(feedId=args[0])
+        return func(*args, **kwargs)
+    return if_not_present_create
+
+
+def check_username(func):
+    def if_valid_continue(*args, **kwargs):
+        if not re.compile(validUsername).match(args[1]):
+            return #code of invalid username
+        return func(*args, **kwargs)
+    return if_valid_continue
+
+
+def check_keyword(func):
+    def if_valid_continue(*args, **kwargs):
+        if not re.compile(validKeyword).match(args[1]):
+            return #code of invalid username
+        return func(*args, **kwargs)
+    return if_valid_continue
+
+
+@check_username
 @check_feed_id
 @db_session
 def add_account(feedId, username):
-    if not Account.exists(lambda account: account.username == username and account.feedee.feedId != feedId):
-        Account(username=username, feedee=Feedee[feedId])
+	feedee = Feedee[feedIde]
+    if not Account.exists(lambda account: account.username == username and account.feedee != feedee):
+        Account(username=username, feedee=feedee)
         commit()
         return #code of success
     else:
         return #code of already exists
 
 
+@check_username
+@check_keyword
 @check_feed_id
 @db_session
 def add_keyword(feedId, username, keyword):
@@ -59,6 +70,7 @@ def add_keyword(feedId, username, keyword):
         return #code of already exists
 
 
+@check_username
 @check_feed_id
 @db_session
 def delete_account(feedId, username):
@@ -70,6 +82,8 @@ def delete_account(feedId, username):
         return #code of does not exists
 
 
+@check_username
+@check_keyword
 @check_feed_id
 @db_session
 def delete_keyword(feedId, username, keyword):
@@ -84,15 +98,22 @@ def delete_keyword(feedId, username, keyword):
 @check_feed_id
 @db_session
 def list_accounts(feedId):
-    return select(a.username for a in Feedee[feedId].accounts)[:]
+    accounts = select(a.username for a in Feedee[feedId].accounts)[:]
+    if len(accounts)==0: return #code of no accounts added yet
+    return accounts
 
 
+@check_username
 @check_feed_id
 @db_session
 def list_keywords(feedId, username):
-    return select(k.word for k in Feedee[feedId].accounts.get(feedee=Feedee[feedId], username=username).keywords)[:]
+	account = Feedee[feedId].accounts.get(username=username, feedee=Feedee[feedId])
+    keywords = select(k.word for k in account.keywords)[:]
+    if len(keywords)==0: return #code of no keywords added yet
+    return keywords    
 
 
+###As of now, Pony does not provide bulk inserts
 def add_accounts(feedId, usernames):
     #incremental code
     for username in usernames:

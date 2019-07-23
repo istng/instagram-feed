@@ -42,11 +42,11 @@ def parse_input():
 
 #keywords = ' '.join(instagramFeed.get_keywords(userId, username))
 #accountsNames = '\n'.join(instagramFeed.get_usernames(userId)) what if the userId is new and there are no accounts?
-def process(ret):
+def process_reply_msg(ret):
     return
 
 
-def check_parameters(func):
+def check_user_msg_parameters(func):
     def check_and_call(bot, update):
             chatId = update.message.chat_id
             params = update.message.text.split()[1::]
@@ -54,19 +54,19 @@ def check_parameters(func):
                 bot.send_message(chat_id=chatId, text=noParamsGiven)
             else:
                 ret = func(bot, update)
-                replyMsg = process(ret)
+                replyMsg = process_reply_msg(ret)
                 bot.send_message(chat_id=chatId, text=replyMsg)
     return check_and_call
 
 
-@check_parameters
+@check_user_msg_parameters
 def add_accounts(bot, update):
     userId = update.message.chat_id
     usernames = update.message.text.split()[1::]
     return instagramFeed.add_accounts(userId, usernames)
 
 
-@check_parameters
+@check_user_msg_parameters
 def add_keywords(bot, update):
     userId  = update.message.chat_id
     userMsg = update.message.text.split()[1::]
@@ -75,27 +75,27 @@ def add_keywords(bot, update):
     return instagramFeed.add_keywords(userId, username, keywords)
 
 
-@check_parameters
+@check_user_msg_parameters
 def list_accounts(bot, update):
     userId = update.message.chat_id
     return instagramFeed.list_usernames(userId)
 
 
-@check_parameters
+@check_user_msg_parameters
 def list_keywords(bot, update):
     userId = update.message.chat_id
     username = update.message.text.split()[1]
     return instagramFeed.list_keywords(userId, username)
 
 
-@check_parameters
+@check_user_msg_parameters
 def delete_accounts(bot, update):
     userId = update.message.chat_id
     usernames = update.message.text.split()[1::]
     return instagramFeed.delete_accounts(userId, usernames)
 
 
-@check_parameters
+@check_user_msg_parameters
 def delete_keywords(bot, update):
     userId  = update.message.chat_id
     userMsg = update.message.text.split()[1::]
@@ -158,7 +158,7 @@ def main():
     # Start the Bot
     updater.start_polling()
 
-    # Run the bot until the user presses Ctrl-C or the process receives SIGINT,
+    # Run the bot until the user presses Ctrl-C or the process_reply_msg receives SIGINT,
     # SIGTERM or SIGABRT
     updater.idle()
 
