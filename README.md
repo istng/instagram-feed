@@ -9,6 +9,6 @@ I generalized the idea of live performances of bands to any kind of instagram ac
 
 
 # Implementation
-The language used is python. The bot uses `telegram-python-bot`, but the tool itself to get new publications is independent from the bot, and uses the `selenium` module to get the posts.
+The language used is python. The bot uses `telegram-python-bot`, but the tool itself to get new publications is independent from the bot, and uses the `selenium` module to get the posts. I'am currently using `sqlite` as the database engine to store all the pertinent information, via `Pony ORM`.
 
 The project is currently being updated as I learn new techniques to solve the problems I find.
