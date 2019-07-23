@@ -1,31 +1,8 @@
-import re
 from datetime import datetime
 from selenium.webdriver import Firefox
 import time
 from models import *
-
-
-validUsername   = '^([A-Za-z0-9_](?:(?:[A-Za-z0-9_]|(?:\.(?!\.))){0,28}(?:[A-Za-z0-9_]))?)$'
-validKeyword    = '^[^\s]{1,15}$'
-
-
-def check_feed_id(func):
-    @db_session
-    def if_not_present_create(*args, **kwargs):
-        if not Feedee.exists(lambda feedee: feedee.feedId == args[0]):
-            Feedee(feedId=args[0])
-        return func(*args, **kwargs)
-    return if_not_present_create
-
-#too many decoratos... should use another strategy
-def check_user_name(func):
-    @db_session
-    def check_and_continue(*args, **kwargs):
-        if not re.compile(validUsername).match(args[1]):
-            return #code of invalid username
-        return func(*args, **kwargs)
-    return check_and_continue
-
+from asserts import *
 
 postUrl    = 'https://www.instagram.com/p/'
 scrollDown = 'window.scrollTo(0, document.body.scrollHeight);'    
@@ -36,86 +13,112 @@ def bind_db(provider, path):
     db.generate_mapping(create_tables=True)
 
 
-@check_feed_id
+@valid_add_account_params
 @db_session
 def add_account(feedId, username):
-    if not Account.exists(lambda account: account.username == username and account.feedee.feedId != feedId):
-        Account(username=username, feedee=Feedee[feedId])
-        commit()
-        return #code of success
-    else:
-        return #code of already exists
+    feedee = Feedee[feedId]
+    Account(username=username, lastRestartDate=datetime(year=2018, month=3, day=1), keywordsEnabled=False, feedee=feedee)
+    commit()
+    return 0
 
 
-@check_feed_id
+@valid_add_keyword_params
 @db_session
 def add_keyword(feedId, username, keyword):
-    if not Account.exists(lambda account: account.username == username and account.feedee.feedId != feedId):
-        return #code of username not present
-    if not Keyword.exists(lambda keyword: keyword.word == keyword and keyword.account.username == username and keyword.account.feedee.feedId == feedId):
-        Keyword(word=keyword, account=Account[username])
-        commit()
-    else:
-        return #code of already exists
+    feedee = Feedee[feedId]
+    account = Account.get(username=username, feedee=feedee)
+    Keyword(word=keyword, account=account)
+    commit()
+    return 0
 
 
-@check_feed_id
+@valid_delete_account_params
 @db_session
 def delete_account(feedId, username):
-    if Account.exists(lambda account: account.username == username and account.feedee.feedId == feedId):
-        Account.get(feedee=Feedee[feedId], username=username).delete()
-        commit()
-        return #code of success
-    else:
-        return #code of does not exists
+    feedee = Feedee[feedId]
+    Account.get(username=username, feedee=feedee).delete()
+    commit()
+    return 0
 
 
-@check_feed_id
+@valid_delete_keyword_params
 @db_session
 def delete_keyword(feedId, username, keyword):
-    if Keyword.exists(lambda keyword: keyword.word == keyword and keyword.account.username == username and keyword.account.feedee.feedId == feedId):
-        Keyword.get(word=keyword, account=Account.get(username=username, feedee=keyword.account.feedee)).delete()
-        commit()
-        return #code of success
-    else:
-        return #code of does not exists
+    feedee = Feedee[feedId]
+    account = Account.get(username=username, feedee=feedee)
+    Keyword.get(word=keyword, account=account).delete()
+    commit()
+    return 0
 
 
-@check_feed_id
+@valid_list_accounts_params
 @db_session
-def list_accounts(feedId):
+def list_usernames(feedId):
     return select(a.username for a in Feedee[feedId].accounts)[:]
 
 
-@check_feed_id
+@valid_account_query_params
 @db_session
 def list_keywords(feedId, username):
-    return select(k.word for k in Feedee[feedId].accounts.get(feedee=Feedee[feedId], username=username).keywords)[:]
+    feedee = Feedee[feedId]
+    account = Account.get(username=username, feedee=feedee)
+    return select(k.word for k in account.keywords)[:]
 
 
+@valid_account_query_params
+@db_session
+def enable_all(feedId, username):
+    feedee = Feedee[feedId]
+    account = Account.get(username=username, feedee=feedee)
+    account.keywordsEnabled = False
+    return 0
+
+
+@valid_account_query_params
+@db_session
+def enable_keywords(feedId, username):
+    feedee = Feedee[feedId]
+    account = Account.get(username=username, feedee=feedee)
+    account.keywordsEnabled = True
+    return 0
+
+
+###As of now, Pony does not provide bulk inserts
 def add_accounts(feedId, usernames):
-    #incremental code
+    errors = []
     for username in usernames:
-        add_account(feedId, username)
-    #return incremental code
+        try:
+            add_account(feedId, username)
+        except ValueError as e:
+            errors.append((username, e))
+    return errors
 
 
 def add_keywords(feedId, username, keywords):
-    #incremental code
+    errors = []
     for keyword in keywords:
-        add_account(feedId, username, keyword)
-    #return incremental code    
+        try:
+            add_keyword(feedId, username, keyword)
+        except ValueError as e:
+            errors.append((username, keyword, e))
+    return errors
 
 
 def delete_accounts(feedId, usernames):
-    #incremental code
+    errors = []
     for username in usernames:
-        delete_account(feedId, username)
-    #return incremental code
+        try:
+            delete_account(feedId, username)
+        except ValueError as e:
+            errors.append((username, e))
+    return errors
 
 
 def delete_keywords(feedId, username, keywords):
-    #incremental code
+    errors = []
     for keyword in keywords:
-        delete_account(feedId, username, keyword)
-    #return incremental code    
+        try:
+            delete_keyword(feedId, username, keyword)
+        except ValueError as e:
+            errors.append((username, keyword, e))
+    return errors

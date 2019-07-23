@@ -40,13 +40,13 @@ def parse_input():
     return args
 
 
-#keywords = ' '.join(instagramFeed.get_keywords(userId, username))
-#accountsNames = '\n'.join(instagramFeed.get_usernames(userId)) what if the userId is new and there are no accounts?
-def process(ret):
-    return
+#keywords = ' '.join(instagramFeeder.get_keywords(userId, username))
+#accountsNames = '\n'.join(instagramFeeder.get_usernames(userId)) what if the userId is new and there are no accounts?
+def process_reply_msg(ret):
+    return str(ret) #should make the proper reply msgs
 
 
-def check_parameters(func):
+def check_user_msg_parameters(func):
     def check_and_call(bot, update):
             chatId = update.message.chat_id
             params = update.message.text.split()[1::]
@@ -54,66 +54,69 @@ def check_parameters(func):
                 bot.send_message(chat_id=chatId, text=noParamsGiven)
             else:
                 ret = func(bot, update)
-                replyMsg = process(ret)
+                replyMsg = process_reply_msg(ret)
                 bot.send_message(chat_id=chatId, text=replyMsg)
     return check_and_call
 
 
-@check_parameters
+@check_user_msg_parameters
 def add_accounts(bot, update):
     userId = update.message.chat_id
     usernames = update.message.text.split()[1::]
-    return instagramFeed.add_accounts(userId, usernames)
+    return instagramFeeder.add_accounts(userId, usernames)
 
 
-@check_parameters
+@check_user_msg_parameters
 def add_keywords(bot, update):
     userId  = update.message.chat_id
     userMsg = update.message.text.split()[1::]
     username = userMsg[0]
     keywords = userMsg[1::]
-    return instagramFeed.add_keywords(userId, username, keywords)
+    return instagramFeeder.add_keywords(userId, username, keywords)
 
 
-@check_parameters
-def list_accounts(bot, update):
-    userId = update.message.chat_id
-    return instagramFeed.list_usernames(userId)
+def list_username_accounts(bot, update):
+    chatId = update.message.chat_id
+    usernames = instagramFeeder.list_usernames(chatId)
+    bot.send_message(chat_id=chatId, text=str(usernames)) #should handle this better
 
 
-@check_parameters
+@check_user_msg_parameters
 def list_keywords(bot, update):
     userId = update.message.chat_id
     username = update.message.text.split()[1]
-    return instagramFeed.list_keywords(userId, username)
+    try:
+    	return instagramFeeder.list_keywords(userId, username)
+    except ValueError as e:
+    	return [(username, e)]
 
 
-@check_parameters
+@check_user_msg_parameters
 def delete_accounts(bot, update):
     userId = update.message.chat_id
     usernames = update.message.text.split()[1::]
-    return instagramFeed.delete_accounts(userId, usernames)
+    return instagramFeeder.delete_accounts(userId, usernames)
 
 
-@check_parameters
+@check_user_msg_parameters
 def delete_keywords(bot, update):
     userId  = update.message.chat_id
     userMsg = update.message.text.split()[1::]
     username = userMsg[0]
     keywords = userMsg[1::]
-    return instagramFeed.delete_keywords(userId, username, keywords)
+    return instagramFeeder.delete_keywords(userId, username, keywords)
 
 
 def enable_all(bot, update):
     chatId = update.message.chat_id
     username = update.message.text.split()[1::]
-    return instagramFeed.enable_all(userId, username)
+    return instagramFeeder.enable_all(userId, username)
     
 
 def enable_keywords(bot, update):
     chatId = update.message.chat_id
     username = update.message.text.split()[1::]
-    return instagramFeed.enable_keywords(userId, username)
+    return instagramFeeder.enable_keywords(userId, username)
 
 
 def start(bot, update):
@@ -140,7 +143,7 @@ def main():
     global botArgs
     botArgs = parse_input()
 
-    instagramFeed.bind_db('sqlite', botArgs.economyDB)
+    instagramFeeder.bind_db('sqlite', botArgs.economyDB)
 
 
     updater = Updater(botArgs.token)
@@ -149,16 +152,16 @@ def main():
     updater.dispatcher.add_handler(CommandHandler("help", help))
     updater.dispatcher.add_handler(CommandHandler("addaccounts", add_accounts))
     updater.dispatcher.add_handler(CommandHandler("addkeywords", add_keywords))
-    updater.dispatcher.add_handler(CommandHandler("listaccounts", list_accounts))
+    updater.dispatcher.add_handler(CommandHandler("listaccounts", list_username_accounts))
     updater.dispatcher.add_handler(CommandHandler("listkeywords", list_keywords))
-    updater.dispatcher.add_handler(CommandHandler("delaccounts", delete_accounts))
-    updater.dispatcher.add_handler(CommandHandler("delkeywords", delete_keywords))
+    updater.dispatcher.add_handler(CommandHandler("deleteaccounts", delete_accounts))
+    updater.dispatcher.add_handler(CommandHandler("deletekeywords", delete_keywords))
     updater.dispatcher.add_handler(CommandHandler("enableall", enable_all))
     updater.dispatcher.add_handler(CommandHandler("enablekeywords", enable_keywords))
     # Start the Bot
     updater.start_polling()
 
-    # Run the bot until the user presses Ctrl-C or the process receives SIGINT,
+    # Run the bot until the user presses Ctrl-C or the process_reply_msg receives SIGINT,
     # SIGTERM or SIGABRT
     updater.idle()
 
