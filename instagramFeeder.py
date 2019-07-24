@@ -88,85 +88,27 @@ def enable_keywords(feedId, username):
     return 0
 
 
-
-##Batch functions. As of now Pony does not support them natively.
-
-
-def add_accounts(feedId, usernames):
-    errors = []
-    for username in usernames:
-        try:
-            add_account(feedId, username)
-        except ValueError as e:
-            errors.append((username, e))
-    return errors
-
-
-def add_keywords(feedId, username, keywords):
-    errors = []
-    for keyword in keywords:
-        try:
-            add_keyword(feedId, username, keyword)
-        except ValueError as e:
-            errors.append((username, keyword, e))
-    return errors
-
-
-def delete_accounts(feedId, usernames):
-    errors = []
-    for username in usernames:
-        try:
-            delete_account(feedId, username)
-        except ValueError as e:
-            errors.append((username, e))
-    return errors
-
-
-def delete_keywords(feedId, username, keywords):
-    errors = []
-    for keyword in keywords:
-        try:
-            delete_keyword(feedId, username, keyword)
-        except ValueError as e:
-            errors.append((username, keyword, e))
-    return errors
-
-
-def enable_all_many(feedId, usernames):
-    for username in usernames:
-        enable_all(feedId, username)
-
-
-def enable_keywords_many(feedId, usernames):
-    for username in usernames:
-        enable_keywords(feedId, username)
-
-
-
-##Get last posts functions.
-
-
 @db_session
 def list_feedees_ids():
     return select(f.feedId for f in Feedee)[:]
 
 
 @db_session
-def is_newer(feedId, username, date):
+def _is_newer(feedId, username, date):
     feedee = Feedee[feedId]
     account = Account.get(username=username, feedee=feedee)
     return account.lastUpdatedDate < date
 
 
 @db_session
-def is_all_enabled(feedId, username):
+def _is_all_enabled(feedId, username):
     feedee = Feedee[feedId]
     account = Account.get(username=username, feedee=feedee)
     return not account.keywordsEnabled
 
 
 @db_session
-def contains_any_keyword(feedId, username, caption):
+def _contains_any_keyword(feedId, username, caption):
     feedee = Feedee[feedId]
     account = Account.get(username=username, feedee=feedee)
     keywords = {k.word for k in account.keywords}
@@ -174,7 +116,7 @@ def contains_any_keyword(feedId, username, caption):
 
 
 @db_session
-def update_date(feedId, username, dates):
+def _update_date(feedId, username, dates):
     feedee = Feedee[feedId]
     account = Account.get(username=username, feedee=feedee)
     newestDate = account.lastUpdatedDate
@@ -183,7 +125,7 @@ def update_date(feedId, username, dates):
     account.lastUpdatedDate = newestDate
 
 
-def get_posts(feedId, username, numberOfPublications):
+def _get_posts(feedId, username, numberOfPublications):
     url = accountUrl%(username)
     browser = Firefox()
     browser.get(url)
@@ -202,7 +144,7 @@ def get_posts(feedId, username, numberOfPublications):
 
 @valid_account_query_params
 def get_last_posts(feedId, username, numberOfPublications=10):
-    urls = get_posts(feedId, username, numberOfPublications)
+    urls = _get_posts(feedId, username, numberOfPublications)
     browser = Firefox()
     postsLinks = []
     dates = []
@@ -215,10 +157,10 @@ def get_last_posts(feedId, username, numberOfPublications=10):
             caption = set(browser.find_element_by_xpath(xpathCaption).text.split())
         except:
             print('Primitive log')
-        if is_newer(feedId, username, date) and (is_all_enabled(feedId, username) or contains_any_keyword(feedId, username, caption)):
+        if _is_newer(feedId, username, date) and (_is_all_enabled(feedId, username) or _contains_any_keyword(feedId, username, caption)):
             postsLinks.append(link)
             dates.append(date)
             time.sleep(scrapingSleep)
     browser.close()
-    update_date(feedId, username, dates)
+    _update_date(feedId, username, dates)
     return postsLinks
