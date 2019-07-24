@@ -108,15 +108,15 @@ def delete_keywords(bot, update):
 
 
 def enable_all(bot, update):
-    chatId = update.message.chat_id
-    username = update.message.text.split()[1::]
-    return instagramFeeder.enable_all(userId, username)
+    userId = update.message.chat_id
+    usernames = update.message.text.split()[1::]
+    return instagramFeeder.enable_all_many(userId, usernames)
     
 
 def enable_keywords(bot, update):
-    chatId = update.message.chat_id
-    username = update.message.text.split()[1::]
-    return instagramFeeder.enable_keywords(userId, username)
+    userId = update.message.chat_id
+    usernames = update.message.text.split()[1::]
+    return instagramFeeder.enable_keywords_many(userId, usernames)
 
 
 def start(bot, update):

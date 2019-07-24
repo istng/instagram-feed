@@ -12,7 +12,7 @@ class Feedee(db.Entity):
 
 class Account(db.Entity):
     username        = Required(str)
-    lastRestartDate = Required(datetime)
+    lastUpdatedDate = Required(datetime)
     keywordsEnabled = Required(bool)
     keywords        = Set('Keyword')
     feedee          = Required(Feedee)
