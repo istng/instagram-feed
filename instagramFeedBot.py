@@ -23,7 +23,7 @@ helpMsg            = 'This is a list of the functions I know:\n'
 noParamsGiven      = 'Please send the command with valid parameters.'
 
 
-functionsHelp = "/addaccounts username1 username2 username3 ...\nAdds one or more accounts by their usernames.\n\n/addkeywords username keyword1 keyword2 ...\nAdds one or more keywords to the username's account.\n\n/deleteaccounts username1 username2 username3 ...\nDeletes all accounts with given usernames.\n\n/deletekeywords username keyword1 keyword2 ...\nDeletes all given keywords from given username's account.\n\n/enableall username\nEnables all posts from username's account.\n\n/enablekeywords username\nEnables only posts containing the username's account keywords.\n\n/listaccounts\nI'll send a list of all present accounts.\n\n/listkeywords username\nI'll send a list of all the keywords of that username's account."
+functionsHelp = "/addaccounts username1 username2 username3 ...\nAdds one or more accounts by their usernames.\n\n/addkeywords username keyword1 keyword2 ...\nAdds one or more keywords to the username's account.\n\n/deleteaccounts username1 username2 username3 ...\nDeletes all accounts with given usernames.\n\n/deletekeywords username keyword1 keyword2 ...\nDeletes all given keywords from given username's account.\n\n/enableall username1 username2 username3 ...\nEnables all posts from each username's account.\n\n/enablekeywords username1 username2 username3 ...\nEnables only posts containing each username's account keywords.\n\n/listaccounts\nI'll send a list of all present accounts.\n\n/listkeywords username\nI'll send a list of all the keywords of that username's account."
 
 
 checkTimeDefault = 24 #in hours
@@ -63,7 +63,13 @@ def check_user_msg_parameters(func):
 def add_accounts(bot, update):
     userId = update.message.chat_id
     usernames = update.message.text.split()[1::]
-    return instagramFeeder.add_accounts(userId, usernames)
+    errors = []
+    for username in usernames:
+        try:
+            instagramFeeder.add_account(userId, username)
+        except ValueError as e:
+            errors.append((username, e))
+    return errors
 
 
 @check_user_msg_parameters
@@ -72,13 +78,21 @@ def add_keywords(bot, update):
     userMsg = update.message.text.split()[1::]
     username = userMsg[0]
     keywords = userMsg[1::]
-    return instagramFeeder.add_keywords(userId, username, keywords)
+    errors = []
+    for keyword in keywords:
+        try:
+            instagramFeeder.add_keyword(userId, username, keyword)
+        except ValueError as e:
+            errors.append((username, keyword, e))
+    return errors
 
 
 def list_username_accounts(bot, update):
     chatId = update.message.chat_id
-    usernames = instagramFeeder.list_usernames(chatId)
-    bot.send_message(chat_id=chatId, text=str(usernames)) #should handle this better
+    usernames = [u for u in instagramFeeder.list_usernames(chatId)]
+    replyMsg = '\n'.join(usernames)
+    if len(usernames)==0: replyMsg = 'There are no accounts added yet.'
+    bot.send_message(chat_id=chatId, text=replyMsg)
 
 
 @check_user_msg_parameters
@@ -95,7 +109,13 @@ def list_keywords(bot, update):
 def delete_accounts(bot, update):
     userId = update.message.chat_id
     usernames = update.message.text.split()[1::]
-    return instagramFeeder.delete_accounts(userId, usernames)
+    errors = []
+    for username in usernames:
+        try:
+            instagramFeeder.delete_account(userId, username)
+        except ValueError as e:
+            errors.append((username, e))
+    return errors
 
 
 @check_user_msg_parameters
@@ -104,19 +124,37 @@ def delete_keywords(bot, update):
     userMsg = update.message.text.split()[1::]
     username = userMsg[0]
     keywords = userMsg[1::]
-    return instagramFeeder.delete_keywords(userId, username, keywords)
+    errors = []
+    for keyword in keywords:
+        try:
+            instagramFeeder.delete_keyword(userId, username, keyword)
+        except ValueError as e:
+            errors.append((username, keyword, e))
+    return errors
 
 
 def enable_all(bot, update):
     userId = update.message.chat_id
     usernames = update.message.text.split()[1::]
-    return instagramFeeder.enable_all_many(userId, usernames)
+    errors = []
+    for username in usernames:
+        try:
+            instagramFeeder.enable_all(userId, username)
+        except ValueError as e:
+            errors.append((username, keyword, e))
+    return errors
     
 
 def enable_keywords(bot, update):
     userId = update.message.chat_id
     usernames = update.message.text.split()[1::]
-    return instagramFeeder.enable_keywords_many(userId, usernames)
+    errors = []
+    for username in usernames:
+        try:
+            instagramFeeder.enable_keywords(userId, username)
+        except ValueError as e:
+            errors.append((username, keyword, e))
+    return errors
 
 
 def start(bot, update):
@@ -128,9 +166,9 @@ def help(bot, update):
 
 
 def check_feed(bot, job):
+    #should improve this
     feedees = instagramFeeder.list_feedees_ids()
     for feedee in feedees:
-        #bot.send_message(chat_id=feedee, text='hola mostro, vos sos '+str(feedee))
         usernames = instagramFeeder.list_usernames(feedee)
         for username in usernames:
             posts = instagramFeeder.get_last_posts(feedee, username, 1)
