@@ -5,9 +5,12 @@ from models import *
 from asserts import *
 
 
-accountUrl = 'https://www.instagram.com/%s/'
-postUrl    = 'https://www.instagram.com/p/'
-scrollDown = 'window.scrollTo(0, document.body.scrollHeight);'    
+accountUrl    = 'https://www.instagram.com/%s/'
+postUrl       = 'https://www.instagram.com/p/'
+scrollDown    = 'window.scrollTo(0, document.body.scrollHeight);'    
+xpathDate     = '//*[@id="react-root"]/section/main/div/div/article/div[2]/div[2]/a/time'
+xpathCaption  = '//*[@id="react-root"]/section/main/div/div/article/div[2]/div[1]/ul/div[1]/li/div/div/div/span'
+scrapingSleep = 10
 
 
 def bind_db(provider, path):
@@ -19,7 +22,7 @@ def bind_db(provider, path):
 @db_session
 def add_account(feedId, username):
     feedee = Feedee[feedId]
-    Account(username=username, lastRestartDate=datetime(year=2018, month=3, day=1), keywordsEnabled=False, feedee=feedee)
+    Account(username=username, lastUpdatedDate=datetime.now(), keywordsEnabled=True, feedee=feedee)
     commit()
     return 0
 
@@ -152,7 +155,7 @@ def list_feedees_ids():
 def is_newer(feedId, username, date):
     feedee = Feedee[feedId]
     account = Account.get(username=username, feedee=feedee)
-    return account.lastRestartDate < date
+    return account.lastUpdatedDate < date
 
 
 @db_session
@@ -174,10 +177,10 @@ def contains_any_keyword(feedId, username, caption):
 def update_date(feedId, username, dates):
     feedee = Feedee[feedId]
     account = Account.get(username=username, feedee=feedee)
-    newestDate = account.lastRestartDate
+    newestDate = account.lastUpdatedDate
     for date in dates:
         if newestDate < date: newestDate = date
-    account.lastRestartDate = newestDate
+    account.lastUpdatedDate = newestDate
 
 
 def get_posts(feedId, username, numberOfPublications):
@@ -191,7 +194,7 @@ def get_posts(feedId, username, numberOfPublications):
             if postUrl in link and link not in post_links:
                 post_links.append(link)
         browser.execute_script(scrollDown)
-        time.sleep(10)
+        time.sleep(scrapingSleep)
     else:
         browser.close()
         return post_links[:numberOfPublications]
@@ -205,20 +208,17 @@ def get_last_posts(feedId, username, numberOfPublications=10):
     dates = []
     for link in urls:
         browser.get(link)
-        xpath_date = '//*[@id="react-root"]/section/main/div/div/article/div[2]/div[2]/a/time'
-        dateStr = browser.find_element_by_xpath(xpath_date).get_attribute('datetime')[0:9]
+        dateStr = browser.find_element_by_xpath(xpathDate).get_attribute('datetime')[0:9]
         date = datetime.strptime(dateStr, '%Y-%M-%d')
-        print(date)
-        xpath_caption = '//*[@id="react-root"]/section/main/div/div/article/div[2]/div[1]/ul/div[1]/li/div/div/div/span'
         caption = ''
         try:
-            caption = set(browser.find_element_by_xpath(xpath_caption).text.split())
+            caption = set(browser.find_element_by_xpath(xpathCaption).text.split())
         except:
             print('Primitive log')
         if is_newer(feedId, username, date) and (is_all_enabled(feedId, username) or contains_any_keyword(feedId, username, caption)):
             postsLinks.append(link)
             dates.append(date)
-            time.sleep(10)
+            time.sleep(scrapingSleep)
     browser.close()
     update_date(feedId, username, dates)
     return postsLinks
