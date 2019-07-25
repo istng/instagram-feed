@@ -41,13 +41,13 @@ def parse_input():
 
 
 def check_user_msg_parameters(func):
-    def check_params(bot, update):
+    def check_and_call(bot, update):
             chatId = update.message.chat_id
             params = update.message.text.split()[1::]
             if len(params) != 0:
                 return func(bot, update)
             bot.send_message(chat_id=chatId, text=noParamsGiven)
-    return check_params
+    return check_and_call
 
 
 def process_reply_msg(errors):
