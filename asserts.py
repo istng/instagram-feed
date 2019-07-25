@@ -14,26 +14,26 @@ def feedee_not_present_create(*args, **kwargs):
 
 def assert_valid_username(*args, **kwargs):
     if not re.compile(validUsername).match(args[1]):
-        raise ValueError('Invalid Instagram username')
+        raise ValueError('Invalid Instagram username: %s'%(args[1]))
 
 
 def assert_valid_keyword(*args, **kwargs):
     if not re.compile(validKeyword).match(args[2]):
-        raise ValueError('Invalid keyword: too long')
+        raise ValueError('Keyword too long: %s'%(args[2]))
 
 
 @m.db_session
 def assert_account_existence(*args, **kwargs):
     feedee = m.Feedee[args[0]]
     if not m.Account.exists(lambda account: account.feedee == feedee and account.username == args[1]):
-        raise ValueError('Account does not exists')     
+        raise ValueError('Account by the username %s is not present'%(args[1]))
 
 
 @m.db_session
 def assert_account_not_existence(*args, **kwargs):
     feedee = m.Feedee[args[0]]
     if m.Account.exists(lambda account: account.feedee == feedee and account.username == args[1]):
-        raise ValueError('Account already exists')        
+        raise ValueError('Account by the username %s already exists'%(args[1]))
 
 
 @m.db_session
@@ -41,7 +41,7 @@ def assert_keyword_existence(*args, **kwargs):
     feedee = m.Feedee[args[0]]
     account = m.Account.get(username=args[1], feedee=feedee)
     if not m.Keyword.exists(lambda keyword: keyword.account == account and keyword.word == args[2]):
-        raise ValueError('Keyword does not exists')   
+        raise ValueError('Keyword %s does not exists'%(args[2]))
 
 
 @m.db_session
@@ -49,7 +49,7 @@ def assert_keyword_not_existence(*args, **kwargs):
     feedee = m.Feedee[args[0]]
     account = m.Account.get(username=args[1], feedee=feedee)
     if m.Keyword.exists(lambda keyword: keyword.account == account and keyword.word == args[2]):
-        raise ValueError('Keyword already exists')
+        raise ValueError('Keyword %s for account %s already exists'%(args[2], args[1]))
 
 
 def valid_add_account_params(func):
