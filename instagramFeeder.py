@@ -10,12 +10,13 @@ logging.basicConfig(format='%(asctime)s, %(name)s, %(levelname)s, %(message)s',
                        level=logging.INFO)
 
 
-accountUrl    = 'https://www.instagram.com/%s/'
-postUrl       = 'https://www.instagram.com/p/'
-scrollDown    = 'window.scrollTo(0, document.body.scrollHeight);'    
-xpathDate     = '//*[@id="react-root"]/section/main/div/div/article/div[2]/div[2]/a/time'
-xpathCaption  = '//*[@id="react-root"]/section/main/div/div/article/div[2]/div[1]/ul/div[1]/li/div/div/div/span'
-scrapingSleep = 10
+accountUrl     = 'https://www.instagram.com/%s/'
+postUrl        = 'https://www.instagram.com/p/'
+scrollDown     = 'window.scrollTo(0, document.body.scrollHeight);'    
+xpathDate      = '//*[@id="react-root"]/section/main/div/div/article/div[2]/div[2]/a/time'
+xpathCaption   = '//*[@id="react-root"]/section/main/div/div/article/div[2]/div[1]/ul/div[1]/li/div/div/div/span'
+numbOfPostsDef = 5
+scrapSleepDef  = 10
 
 
 def bind_db(provider, path):
@@ -130,7 +131,7 @@ def _update_date(feedId, username, dates):
     account.lastUpdatedDate = newestDate
 
 
-def _get_posts(feedId, username, numberOfPosts):
+def _get_posts(feedId, username, numberOfPosts, scrapingSleep):
     url = accountUrl%(username)
     browser = Firefox()
     browser.get(url)
@@ -147,8 +148,8 @@ def _get_posts(feedId, username, numberOfPosts):
 
 
 @valid_account_query_params
-def get_last_posts(feedId, username, numberOfPosts=10):
-    urls = _get_posts(feedId, username, numberOfPosts)
+def get_last_posts(feedId, username, numberOfPosts=numbOfPostsDef, scrapingSleep=scrapSleepDef):
+    urls = _get_posts(feedId, username, numberOfPosts, scrapingSleep)
     browser = Firefox()
     postsLinks = []
     dates = []
