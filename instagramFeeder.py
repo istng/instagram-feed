@@ -3,6 +3,11 @@ from selenium.webdriver import Firefox
 import time
 from models import *
 from asserts import *
+import logging
+
+
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                       level=logging.INFO)
 
 
 accountUrl    = 'https://www.instagram.com/%s/'
@@ -125,12 +130,12 @@ def _update_date(feedId, username, dates):
     account.lastUpdatedDate = newestDate
 
 
-def _get_posts(feedId, username, numberOfPublications):
+def _get_posts(feedId, username, numberOfPosts):
     url = accountUrl%(username)
     browser = Firefox()
     browser.get(url)
     post_links = []
-    while len(post_links) < numberOfPublications:
+    while len(post_links) < numberOfPosts:
         links = [a.get_attribute('href') for a in browser.find_elements_by_tag_name('a')]
         for link in links:
             if postUrl in link and link not in post_links:
@@ -139,24 +144,28 @@ def _get_posts(feedId, username, numberOfPublications):
         time.sleep(scrapingSleep)
     else:
         browser.close()
-        return post_links[:numberOfPublications]
+        return post_links[:numberOfPosts]
 
 
 @valid_account_query_params
-def get_last_posts(feedId, username, numberOfPublications=10):
-    urls = _get_posts(feedId, username, numberOfPublications)
+def get_last_posts(feedId, username, numberOfPosts=10):
+    urls = _get_posts(feedId, username, numberOfPosts)
     browser = Firefox()
     postsLinks = []
     dates = []
     for link in urls:
         browser.get(link)
-        dateStr = browser.find_element_by_xpath(xpathDate).get_attribute('datetime')[0:9]
-        date = datetime.strptime(dateStr, '%Y-%M-%d')
+        date = datetime(year=datetime.now().year-1, month=1, day=1)
         caption = ''
+        try:
+            dateStr = browser.find_element_by_xpath(xpathDate).get_attribute('datetime')[0:9]
+            date = datetime.strptime(dateStr, '%Y-%M-%d')
+        except:
+            logging.error(str(feedId)+', '+username+', '+link+', datetime not found')            
         try:
             caption = set(browser.find_element_by_xpath(xpathCaption).text.split())
         except:
-            print('Primitive log')
+            logging.error(str(feedId)+', '+username+', '+link+', captions not found')
         if _is_newer(feedId, username, date) and (_is_all_enabled(feedId, username) or _contains_any_keyword(feedId, username, caption)):
             postsLinks.append(link)
             dates.append(date)
