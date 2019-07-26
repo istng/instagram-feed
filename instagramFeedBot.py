@@ -67,6 +67,16 @@ def check_user_msg_parameters(func):
     return check_and_call
 
 
+def tryexcept(errors, func, *args):
+    try:
+        if len(args)==2:
+            func(args[0], args[1])
+        elif len(args)==3:
+            func(args[0], args[1], args[2])
+    except ValueError as e:
+        errors.append(str(e))
+
+
 def process_reply_msg(errors):
     replyMsg = 'Command executed excepting: '+str(errors)[1:-1]
     if errors==[]: replyMsg='Command executed successfully!'
@@ -80,10 +90,7 @@ def add_accounts(bot, update):
     usernames = update.message.text.split()[1::]
     errors = []
     for username in usernames:
-        try:
-            instagramFeeder.add_account(userId, username)
-        except ValueError as e:
-            errors.append(str(e))
+        tryexcept(errors, instagramFeeder.add_account, userId, username)
     log_errors(userId, errors)
     bot.send_message(chat_id=userId, text=process_reply_msg(errors))
 
@@ -97,10 +104,7 @@ def add_keywords(bot, update):
     keywords = userMsg[1::]
     errors = []
     for keyword in keywords:
-        try:
-            instagramFeeder.add_keyword(userId, username, keyword)
-        except ValueError as e:
-            errors.append(str(e))
+        tryexcept(errors, instagramFeeder.add_keyword, userId, username, keyword)
     log_errors(userId, errors)
     bot.send_message(chat_id=userId, text=process_reply_msg(errors))
 
@@ -123,10 +127,14 @@ def list_keywords(bot, update):
     username = update.message.text.split()[1]
     replyMsg = ''
     try:
-        replyMsg = ' '.join([k for k in instagramFeeder.list_keywords(userId, username)])
+        keywords = [k for k in instagramFeeder.list_keywords(userId, username)]
+        if keywords==[]:
+            replyMsg = 'There are no keywords added yet for %s.'%(username)
+            logging.warning(str(userId)+', '+replyMsg)
+        else: replyMsg = ' '.join(keywords)
     except ValueError as e:
         replyMsg = str(e)
-    log_errors(userId, errors)
+        logging.error(str(userId)+', '+replyMsg)
     bot.send_message(chat_id=userId, text=replyMsg)
 
 
@@ -137,10 +145,7 @@ def delete_accounts(bot, update):
     usernames = update.message.text.split()[1::]
     errors = []
     for username in usernames:
-        try:
-            instagramFeeder.delete_account(userId, username)
-        except ValueError as e:
-            errors.append(str(e))
+        tryexcept(errors, instagramFeeder.delete_account, userId, username)
     log_errors(userId, errors)
     bot.send_message(chat_id=userId, text=process_reply_msg(errors))
 
@@ -154,10 +159,7 @@ def delete_keywords(bot, update):
     keywords = userMsg[1::]
     errors = []
     for keyword in keywords:
-        try:
-            instagramFeeder.delete_keyword(userId, username, keyword)
-        except ValueError as e:
-            errors.append(str(e))
+        tryexcept(errors, instagramFeeder.delete_keyword, userId, username, keyword)
     log_errors(userId, errors)
     bot.send_message(chat_id=userId, text=process_reply_msg(errors))
 
@@ -168,10 +170,7 @@ def enable_all(bot, update):
     usernames = update.message.text.split()[1::]
     errors = []
     for username in usernames:
-        try:
-            instagramFeeder.enable_all(userId, username)
-        except ValueError as e:
-            errors.append(str(e))
+        tryexcept(errors, instagramFeeder.enable_all, userId, username)
     log_errors(userId, errors)
     bot.send_message(chat_id=userId, text=process_reply_msg(errors))
     
@@ -182,10 +181,7 @@ def enable_keywords(bot, update):
     usernames = update.message.text.split()[1::]
     errors = []
     for username in usernames:
-        try:
-            instagramFeeder.enable_keywords(userId, username)
-        except ValueError as e:
-            errors.append(str(e))
+        tryexcept(errors, instagramFeeder.enable_keywords, userId, username)
     log_errors(userId, errors)
     bot.send_message(chat_id=userId, text=process_reply_msg(errors))
 
