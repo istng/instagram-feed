@@ -62,20 +62,6 @@ def delete_keyword(feedId, username, keyword):
     return 0
 
 
-@valid_list_accounts_params
-@db_session
-def list_usernames(feedId):
-    return select(a.username for a in Feedee[feedId].accounts)[:]
-
-
-@valid_account_query_params
-@db_session
-def list_keywords(feedId, username):
-    feedee = Feedee[feedId]
-    account = Account.get(username=username, feedee=feedee)
-    return select(k.word for k in account.keywords)[:]
-
-
 @valid_account_query_params
 @db_session
 def enable_all(feedId, username):
@@ -92,6 +78,20 @@ def enable_keywords(feedId, username):
     account = Account.get(username=username, feedee=feedee)
     account.keywordsEnabled = True
     return 0
+
+
+@valid_list_accounts_params
+@db_session
+def list_usernames(feedId):
+    return select(a.username for a in Feedee[feedId].accounts)[:]
+
+
+@valid_account_query_params
+@db_session
+def list_keywords(feedId, username):
+    feedee = Feedee[feedId]
+    account = Account.get(username=username, feedee=feedee)
+    return select(k.word for k in account.keywords)[:]
 
 
 @db_session

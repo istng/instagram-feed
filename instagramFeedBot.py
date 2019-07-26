@@ -110,35 +110,6 @@ def add_keywords(bot, update):
 
 
 @log_user_msg
-def list_username_accounts(bot, update):
-    userId = update.message.chat_id
-    usernames = [u for u in instagramFeeder.list_usernames(userId)]
-    replyMsg = '\n'.join(usernames)
-    if len(usernames)==0:
-        replyMsg = 'There are no accounts added yet.'
-        logging.warning(str(userId)+', '+replyMsg)
-    bot.send_message(chat_id=userId, text=replyMsg)
-
-
-@log_user_msg
-@check_user_msg_parameters
-def list_keywords(bot, update):
-    userId = update.message.chat_id
-    username = update.message.text.split()[1]
-    replyMsg = ''
-    try:
-        keywords = [k for k in instagramFeeder.list_keywords(userId, username)]
-        if keywords==[]:
-            replyMsg = 'There are no keywords added yet for %s.'%(username)
-            logging.warning(str(userId)+', '+replyMsg)
-        else: replyMsg = ' '.join(keywords)
-    except ValueError as e:
-        replyMsg = str(e)
-        logging.error(str(userId)+', '+replyMsg)
-    bot.send_message(chat_id=userId, text=replyMsg)
-
-
-@log_user_msg
 @check_user_msg_parameters
 def delete_accounts(bot, update):
     userId = update.message.chat_id
@@ -184,6 +155,35 @@ def enable_keywords(bot, update):
         tryexcept(errors, instagramFeeder.enable_keywords, userId, username)
     log_errors(userId, errors)
     bot.send_message(chat_id=userId, text=process_reply_msg(errors))
+
+
+@log_user_msg
+def list_username_accounts(bot, update):
+    userId = update.message.chat_id
+    usernames = [u for u in instagramFeeder.list_usernames(userId)]
+    replyMsg = '\n'.join(usernames)
+    if len(usernames)==0:
+        replyMsg = 'There are no accounts added yet.'
+        logging.warning(str(userId)+', '+replyMsg)
+    bot.send_message(chat_id=userId, text=replyMsg)
+
+
+@log_user_msg
+@check_user_msg_parameters
+def list_keywords(bot, update):
+    userId = update.message.chat_id
+    username = update.message.text.split()[1]
+    replyMsg = ''
+    try:
+        keywords = [k for k in instagramFeeder.list_keywords(userId, username)]
+        if keywords==[]:
+            replyMsg = 'There are no keywords added yet for %s.'%(username)
+            logging.warning(str(userId)+', '+replyMsg)
+        else: replyMsg = ' '.join(keywords)
+    except ValueError as e:
+        replyMsg = str(e)
+        logging.error(str(userId)+', '+replyMsg)
+    bot.send_message(chat_id=userId, text=replyMsg)
 
 
 @log_user_msg
