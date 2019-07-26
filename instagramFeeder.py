@@ -6,7 +6,7 @@ from asserts import *
 import logging
 
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+logging.basicConfig(format='%(asctime)s, %(name)s, %(levelname)s, %(message)s',
                        level=logging.INFO)
 
 
@@ -142,9 +142,8 @@ def _get_posts(feedId, username, numberOfPosts):
                 post_links.append(link)
         browser.execute_script(scrollDown)
         time.sleep(scrapingSleep)
-    else:
-        browser.close()
-        return post_links[:numberOfPosts]
+    browser.close()
+    return post_links[:numberOfPosts]
 
 
 @valid_account_query_params
@@ -165,11 +164,11 @@ def get_last_posts(feedId, username, numberOfPosts=10):
         try:
             caption = set(browser.find_element_by_xpath(xpathCaption).text.split())
         except:
-            logging.error(str(feedId)+', '+username+', '+link+', captions not found')
+            logging.warning(str(feedId)+', '+username+', '+link+', captions not found')
         if _is_newer(feedId, username, date) and (_is_all_enabled(feedId, username) or _contains_any_keyword(feedId, username, caption)):
             postsLinks.append(link)
             dates.append(date)
-            time.sleep(scrapingSleep)
+        time.sleep(scrapingSleep)
     browser.close()
     _update_date(feedId, username, dates)
     return postsLinks

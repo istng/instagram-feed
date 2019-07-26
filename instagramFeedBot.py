@@ -7,16 +7,16 @@ from datetime import datetime, timedelta
 import instagramFeeder
 
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+logging.basicConfig(format='%(asctime)s, %(name)s, %(levelname)s, %(message)s',
                        level=logging.INFO)
 
 
-argumentsDescMsg = 'Bot initialization parameters.'
-tokenArgHelp     = 'telegram token'
-economyDBHelp    = 'economy DB path'
-checkTimeArgHelp = 'time to check for new publications'
-numbOfPostsHelp  = 'posts to check from instagram account'
-userIdArgHelp    = 'telegram user id'
+argumentsDescMsg  = 'Bot initialization parameters.'
+tokenArgHelp      = 'telegram token'
+economyDBHelp     = 'economy DB path'
+firstCheckArgHelp = 'seconds to make the first check'
+checkTimeArgHelp  = 'seconds to check for new publications'
+numbOfPostsHelp   = 'posts to check from instagram account'
 
 
 startMsg           = 'Hello! Im the Instagram Feed bot, you can find out what I can do with /help'
@@ -27,8 +27,9 @@ noParamsGiven      = 'Please send the command with valid parameters.'
 functionsHelp = "/addaccounts username1 username2 username3 ...\nAdds one or more accounts by their usernames.\n\n/addkeywords username keyword1 keyword2 ...\nAdds one or more keywords to the username's account.\n\n/deleteaccounts username1 username2 username3 ...\nDeletes all accounts with given usernames.\n\n/deletekeywords username keyword1 keyword2 ...\nDeletes all given keywords from given username's account.\n\n/enableall username1 username2 username3 ...\nEnables all posts from each username's account.\n\n/enablekeywords username1 username2 username3 ...\nEnables only posts containing each username's account keywords.\n\n/listaccounts\nI'll send a list of all present accounts.\n\n/listkeywords username\nI'll send a list of all the keywords of that username's account."
 
 
-checkTimeDefault = 12*60*60 #in seconds
-numberOfPostsDef = 5
+checkTimeDefault  = 12*60*60
+firstCheckDefault = 60
+numberOfPostsDef  = 5
 
 
 def parse_input():
@@ -36,9 +37,9 @@ def parse_input():
     
     parser.add_argument('token', metavar='TOKEN', type=str, help=tokenArgHelp)
     parser.add_argument('economyDB', metavar='ECONOMY DB', type=str, help=economyDBHelp)
+    parser.add_argument('-fc', metavar='FIRST CHECK', type=int, default=firstCheckDefault, help=firstCheckArgHelp)
     parser.add_argument('-ct', metavar='CHECK TIME', type=int, default=checkTimeDefault, help=checkTimeArgHelp)
     parser.add_argument('-np', metavar='NUMBER OF POSTS', type=int, default=numberOfPostsDef, help=numbOfPostsHelp)
-    parser.add_argument('-uid', metavar='USER ID', type=int, help=userIdArgHelp)
     args = parser.parse_args()
     return args
 
@@ -208,12 +209,7 @@ def check_feed(bot, job):
             posts = instagramFeeder.get_last_posts(feedee, username, botArgs.np)
             for post in posts:
                 logging.info(str(feedee.feedId)+', '+post)
-                job.context.message.reply_text(post)
-
-
-#it should enter always, not with the filter text...
-def check_feed_job(bot, update, job_queue):
-    job = job_queue.run_repeating(check_feed, botArgs.ct, context=update)
+                bot.send_message(chat_id=feede, text=post)
 
 
 def main():
@@ -225,17 +221,20 @@ def main():
 
 
     updater = Updater(botArgs.token)
-    updater.dispatcher.add_handler(MessageHandler(Filters.text, check_feed_job, pass_job_queue=True))
-    updater.dispatcher.add_handler(CommandHandler("start", start))
-    updater.dispatcher.add_handler(CommandHandler("help", help))
-    updater.dispatcher.add_handler(CommandHandler("addaccounts", add_accounts))
-    updater.dispatcher.add_handler(CommandHandler("addkeywords", add_keywords))
-    updater.dispatcher.add_handler(CommandHandler("listaccounts", list_username_accounts))
-    updater.dispatcher.add_handler(CommandHandler("listkeywords", list_keywords))
-    updater.dispatcher.add_handler(CommandHandler("deleteaccounts", delete_accounts))
-    updater.dispatcher.add_handler(CommandHandler("deletekeywords", delete_keywords))
-    updater.dispatcher.add_handler(CommandHandler("enableall", enable_all))
-    updater.dispatcher.add_handler(CommandHandler("enablekeywords", enable_keywords))
+    updater.dispatcher.add_handler(CommandHandler('start', start))
+    updater.dispatcher.add_handler(CommandHandler('help', help))
+    updater.dispatcher.add_handler(CommandHandler('addaccounts', add_accounts))
+    updater.dispatcher.add_handler(CommandHandler('addkeywords', add_keywords))
+    updater.dispatcher.add_handler(CommandHandler('listaccounts', list_username_accounts))
+    updater.dispatcher.add_handler(CommandHandler('listkeywords', list_keywords))
+    updater.dispatcher.add_handler(CommandHandler('deleteaccounts', delete_accounts))
+    updater.dispatcher.add_handler(CommandHandler('deletekeywords', delete_keywords))
+    updater.dispatcher.add_handler(CommandHandler('enableall', enable_all))
+    updater.dispatcher.add_handler(CommandHandler('enablekeywords', enable_keywords))
+
+    job = updater.job_queue
+    job.run_repeating(check_feed, interval=botArgs.ct, first=botArgs.fc)
+    
     # Start the Bot
     updater.start_polling()
 
