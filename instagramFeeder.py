@@ -1,5 +1,5 @@
 from datetime import datetime
-from selenium.webdriver import Firefox
+import selenium.webdriver as swd
 import time
 from models import *
 from asserts import *
@@ -10,6 +10,7 @@ logging.basicConfig(format='%(asctime)s, %(name)s, %(levelname)s, %(message)s',
                        level=logging.INFO)
 
 
+webBrowser     = swd.Firefox
 accountUrl     = 'https://www.instagram.com/%s/'
 postUrl        = 'https://www.instagram.com/p/'
 scrollDown     = 'window.scrollTo(0, document.body.scrollHeight);'    
@@ -133,7 +134,7 @@ def _update_date(feedId, username, dates):
 
 def _get_posts(feedId, username, numberOfPosts, scrapingSleep):
     url = accountUrl%(username)
-    browser = Firefox()
+    browser = webBrowser()
     browser.get(url)
     post_links = []
     while len(post_links) < numberOfPosts:
@@ -150,7 +151,7 @@ def _get_posts(feedId, username, numberOfPosts, scrapingSleep):
 @valid_account_query_params
 def get_last_posts(feedId, username, numberOfPosts=numbOfPostsDef, scrapingSleep=scrapSleepDef):
     urls = _get_posts(feedId, username, numberOfPosts, scrapingSleep)
-    browser = Firefox()
+    browser = webBrowser()
     postsLinks = []
     dates = []
     for link in urls:
