@@ -7,11 +7,11 @@ import logging
 
 
 logFile        = './log_'+datetime.now().strftime('%Y.%m.%d')+'.log'
-webBrowser     = swd.Firefox
+webBrowser     = swd.Chrome
 accountUrl     = 'https://www.instagram.com/%s/'
 postUrl        = 'https://www.instagram.com/p/'
 scrollDown     = 'window.scrollTo(0, document.body.scrollHeight);'    
-xpathDate      = '//*[@id="react-root"]/section/main/div/div/article/div[2]/div[2]/a/time'
+datePathOffset = '_1o9PC Nzb55'
 xpathCaption   = '//*[@id="react-root"]/section/main/div/div/article/div[2]/div[1]/ul/div[1]/li/div/div/div/span'
 numbOfPostsDef = 5
 scrapSleepDef  = 10
@@ -30,7 +30,7 @@ def bind_db(provider, path):
 @db_session
 def add_account(feedId, username):
     feedee = Feedee[feedId]
-    Account(username=username, lastUpdatedDate=datetime.now(), keywordsEnabled=True, feedee=feedee)
+    Account(username=username, lastUpdatedDate=datetime.now(), keywordsEnabled=False, feedee=feedee)
     commit()
     return 0
 
@@ -139,12 +139,12 @@ def _get_posts(feedId, username, numberOfPosts, scrapingSleep):
     browser.get(url)
     post_links = []
     while len(post_links) < numberOfPosts:
+        time.sleep(scrapingSleep)
         links = [a.get_attribute('href') for a in browser.find_elements_by_tag_name('a')]
         for link in links:
             if postUrl in link and link not in post_links:
                 post_links.append(link)
         browser.execute_script(scrollDown)
-        time.sleep(scrapingSleep)
     browser.close()
     return post_links[:numberOfPosts]
 
@@ -157,13 +157,15 @@ def get_last_posts(feedId, username, numberOfPosts=numbOfPostsDef, scrapingSleep
     dates = []
     for link in urls:
         browser.get(link)
+        time.sleep(scrapingSleep)
         date = datetime(year=datetime.now().year-1, month=1, day=1)
-        caption = ''
+        caption = {''}
         try:
-            dateStr = browser.find_element_by_xpath(xpathDate).get_attribute('datetime')[0:9]
-            date = datetime.strptime(dateStr, '%Y-%M-%d')
+            publish_time = browser.page_source
+            offset = publish_time.find(datePathOffset)
+            date = datetime.strptime(publish_time[offset+24:offset+34], '%Y-%m-%d')
         except:
-            logging.error(str(feedId)+', '+username+', '+link+', datetime not found')            
+            logging.error(str(feedId)+', '+username+', '+link+', datetime not found')
         try:
             caption = set(browser.find_element_by_xpath(xpathCaption).text.split())
         except:
@@ -171,7 +173,6 @@ def get_last_posts(feedId, username, numberOfPosts=numbOfPostsDef, scrapingSleep
         if _is_newer(feedId, username, date) and (_is_all_enabled(feedId, username) or _contains_any_keyword(feedId, username, caption)):
             postsLinks.append(link)
             dates.append(date)
-        time.sleep(scrapingSleep)
     browser.close()
     _update_date(feedId, username, dates)
     return postsLinks
