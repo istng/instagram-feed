@@ -199,15 +199,16 @@ def check_feed(bot, job):
         for username in usernames:
             posts = instagramFeeder.get_last_posts(feedee, username, botArgs.np)
             for post in posts:
-                instagramFeeder.logging.info(str(feedee.feedId)+', '+post)
-                bot.send_message(chat_id=feede, text=post)
+                instagramFeeder.logging.info(str(feedee)+', '+post)
+                bot.send_message(chat_id=feedee, text=post)
 
 
 def main():
     instagramFeeder.logging.info('Started running')
     global botArgs
     botArgs = parse_input()
-
+    instagramFeeder.logging.info('Bot arguments: '+str(vars(botArgs)))
+    
     instagramFeeder.bind_db('sqlite', botArgs.economyDB)
 
 
