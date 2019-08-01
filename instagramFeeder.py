@@ -6,10 +6,7 @@ from asserts import *
 import logging
 
 
-logging.basicConfig(format='%(asctime)s, %(name)s, %(levelname)s, %(message)s',
-                       level=logging.INFO)
-
-
+logFile        = './log_'+datetime.now().strftime('%Y.%m.%d')+'.log'
 webBrowser     = swd.Firefox
 accountUrl     = 'https://www.instagram.com/%s/'
 postUrl        = 'https://www.instagram.com/p/'
@@ -18,6 +15,10 @@ xpathDate      = '//*[@id="react-root"]/section/main/div/div/article/div[2]/div[
 xpathCaption   = '//*[@id="react-root"]/section/main/div/div/article/div[2]/div[1]/ul/div[1]/li/div/div/div/span'
 numbOfPostsDef = 5
 scrapSleepDef  = 10
+
+
+logging.basicConfig(filename=logFile, format='%(asctime)s, %(name)s, %(levelname)s, %(message)s',
+    level=logging.INFO)
 
 
 def bind_db(provider, path):

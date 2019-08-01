@@ -1,14 +1,9 @@
 import telegram
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, InlineQueryHandler
 from telegram.ext import BaseFilter, MessageHandler, Filters
-import logging
 import argparse
 from datetime import datetime, timedelta
 import instagramFeeder
-
-
-logging.basicConfig(format='%(asctime)s, %(name)s, %(levelname)s, %(message)s',
-                       level=logging.INFO)
 
 
 argumentsDescMsg  = 'Bot initialization parameters.'
@@ -48,13 +43,13 @@ def log_user_msg(func):
     def log_and_call(bot, update):
         chatId = update.message.chat_id
         params = update.message.text
-        logging.info(str(chatId)+', '+params)
+        instagramFeeder.logging.info(str(chatId)+', '+params)
         return func(bot, update)
     return log_and_call
 
 
 def log_errors(userId, errors):
-    if errors!=[]: logging.error(str(userId)+', '+str(errors))
+    if errors!=[]: instagramFeeder.logging.error(str(userId)+', '+str(errors))
 
 
 def check_user_msg_parameters(func):
@@ -164,7 +159,7 @@ def list_username_accounts(bot, update):
     replyMsg = '\n'.join(usernames)
     if len(usernames)==0:
         replyMsg = 'There are no accounts added yet.'
-        logging.warning(str(userId)+', '+replyMsg)
+        instagramFeeder.logging.warning(str(userId)+', '+replyMsg)
     bot.send_message(chat_id=userId, text=replyMsg)
 
 
@@ -178,11 +173,11 @@ def list_keywords(bot, update):
         keywords = [k for k in instagramFeeder.list_keywords(userId, username)]
         if keywords==[]:
             replyMsg = 'There are no keywords added yet for %s.'%(username)
-            logging.warning(str(userId)+', '+replyMsg)
+            instagramFeeder.logging.warning(str(userId)+', '+replyMsg)
         else: replyMsg = ' '.join(keywords)
     except ValueError as e:
         replyMsg = str(e)
-        logging.error(str(userId)+', '+replyMsg)
+        instagramFeeder.logging.error(str(userId)+', '+replyMsg)
     bot.send_message(chat_id=userId, text=replyMsg)
 
 
@@ -204,12 +199,12 @@ def check_feed(bot, job):
         for username in usernames:
             posts = instagramFeeder.get_last_posts(feedee, username, botArgs.np)
             for post in posts:
-                logging.info(str(feedee.feedId)+', '+post)
+                instagramFeeder.logging.info(str(feedee.feedId)+', '+post)
                 bot.send_message(chat_id=feede, text=post)
 
 
 def main():
-    logging.info('Started running')
+    instagramFeeder.logging.info('Started running')
     global botArgs
     botArgs = parse_input()
 
