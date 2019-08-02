@@ -13,6 +13,8 @@ postUrl        = 'https://www.instagram.com/p/'
 scrollDown     = 'window.scrollTo(0, document.body.scrollHeight);'    
 datePathOffset = '_1o9PC Nzb55'
 xpathCaption   = '//*[@id="react-root"]/section/main/div/div/article/div[2]/div[1]/ul/div[1]/li/div/div/div/span'
+xpathError     = '/html/body'
+igPageNotFound = 'Sorry, this page isn\'t available.'
 numbOfPostsDef = 5
 scrapSleepDef  = 10
 
@@ -138,6 +140,15 @@ def _get_posts(feedId, username, numberOfPosts, scrapingSleep):
     browser = webBrowser()
     browser.get(url)
     post_links = []
+    
+    try:
+        if igPageNotFound in browser.find_element_by_xpath(xpathError).text:
+            time.sleep(scrapingSleep)
+            browser.close()
+            return post_links
+    except:
+        pass
+
     while len(post_links) < numberOfPosts:
         time.sleep(scrapingSleep)
         links = [a.get_attribute('href') for a in browser.find_elements_by_tag_name('a')]
