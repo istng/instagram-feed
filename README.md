@@ -1,11 +1,13 @@
 # Description
 ##### Custom Instagram feed sent over a telegram bot.
 
-I've been wanting a feed of instagram bands posts to know when they play whitout having to look over each one of the bands I like, like haveing an _exclusive notification_ for these kind of posts. So I thoutgh that making a bot that would do just that would be a nice exerisce
+I've been wanting a feed of instagram bands posts to know when they play whitout having to look over each one of the bands I like, like having an _exclusive notification_ for these kind of posts. So I thoutgh that making a bot that would do just that would be a nice exerisce
 
 
 ## Use cases
 I generalized the idea of live performances of bands to any kind of instagram account, and the idea of finding out whether or not the publication is a promotion for a perfomance as the search for certain custom keywords in the publication's caption. Then, this bot lets you choose what new posts of instagram accounts you are going to be feeded, given that those posts have your custom keywords.
+
+Alternatively, you can also receive all new posts from the accounts you want. And there is also a function to get any amount of lasts posts you would want from a given account.
 
 
 ## Implementation
