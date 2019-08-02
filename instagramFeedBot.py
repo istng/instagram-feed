@@ -52,7 +52,7 @@ def log_errors(userId, errors):
     if errors!=[]: instagramFeeder.logging.error(str(userId)+', '+str(errors))
 
 
-def check_user_msg_parameters(func):
+def check_user_msg_not_empty(func):
     def check_and_call(bot, update):
             chatId = update.message.chat_id
             params = update.message.text.split()[1::]
@@ -65,9 +65,9 @@ def check_user_msg_parameters(func):
 def tryexcept(errors, func, *args):
     try:
         if len(args)==2:
-            func(args[0], args[1])
+            return func(args[0], args[1])
         elif len(args)==3:
-            func(args[0], args[1], args[2])
+            return func(args[0], args[1], args[2])
     except ValueError as e:
         errors.append(str(e))
 
@@ -79,7 +79,7 @@ def process_reply_msg(errors):
 
 
 @log_user_msg
-@check_user_msg_parameters
+@check_user_msg_not_empty
 def add_accounts(bot, update):
     userId = update.message.chat_id
     usernames = update.message.text.split()[1::]
@@ -91,7 +91,7 @@ def add_accounts(bot, update):
 
 
 @log_user_msg
-@check_user_msg_parameters
+@check_user_msg_not_empty
 def add_keywords(bot, update):
     userId  = update.message.chat_id
     userMsg = update.message.text.split()[1::]
@@ -105,7 +105,7 @@ def add_keywords(bot, update):
 
 
 @log_user_msg
-@check_user_msg_parameters
+@check_user_msg_not_empty
 def delete_accounts(bot, update):
     userId = update.message.chat_id
     usernames = update.message.text.split()[1::]
@@ -117,7 +117,7 @@ def delete_accounts(bot, update):
 
 
 @log_user_msg
-@check_user_msg_parameters
+@check_user_msg_not_empty
 def delete_keywords(bot, update):
     userId  = update.message.chat_id
     userMsg = update.message.text.split()[1::]
@@ -164,7 +164,7 @@ def list_username_accounts(bot, update):
 
 
 @log_user_msg
-@check_user_msg_parameters
+@check_user_msg_not_empty
 def list_keywords(bot, update):
     userId = update.message.chat_id
     username = update.message.text.split()[1]
@@ -179,6 +179,32 @@ def list_keywords(bot, update):
         replyMsg = str(e)
         instagramFeeder.logging.error(str(userId)+', '+replyMsg)
     bot.send_message(chat_id=userId, text=replyMsg)
+
+
+@log_user_msg
+@check_user_msg_not_empty
+def list_n_last_posts(bot, update):
+    userId = update.message.chat_id
+    userMsg = update.message.text.split()[1::]
+    nPosts = 2
+    usernames = userMsg[0::]
+    try: 
+        nPosts = int(userMsg[0])
+        usernames = userMsg[1::]
+    except: pass
+    errors = []
+    links = []
+    for username in usernames:
+        links = tryexcept(errors, instagramFeeder.get_last_n_posts, userId, username, nPosts)
+    log_errors(userId, errors)
+    if len(errors)!=0:
+        bot.send_message(chat_id=userId, text=process_reply_msg(errors))
+    else:
+        if len(links)==0:
+            bot.send_message(chat_id=userId, text='No posts found.')
+        else:
+            for link in links:
+                bot.send_message(chat_id=userId, text=link)
 
 
 @log_user_msg
@@ -223,6 +249,7 @@ def main():
     updater.dispatcher.add_handler(CommandHandler('deletekeywords', delete_keywords))
     updater.dispatcher.add_handler(CommandHandler('enableall', enable_all))
     updater.dispatcher.add_handler(CommandHandler('enablekeywords', enable_keywords))
+    updater.dispatcher.add_handler(CommandHandler('getlastposts', list_n_last_posts))
 
     job = updater.job_queue
     job.run_repeating(check_feed, interval=botArgs.ct, first=botArgs.fc)

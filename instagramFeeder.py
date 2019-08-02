@@ -17,6 +17,7 @@ xpathError     = '/html/body'
 igPageNotFound = 'Sorry, this page isn\'t available.'
 numbOfPostsDef = 5
 scrapSleepDef  = 10
+nToGetDef      = 2
 
 
 logging.basicConfig(filename=logFile, format='%(asctime)s, %(name)s, %(levelname)s, %(message)s',
@@ -139,25 +140,25 @@ def _get_posts(feedId, username, numberOfPosts, scrapingSleep):
     url = accountUrl%(username)
     browser = webBrowser()
     browser.get(url)
-    post_links = []
+    postsLinks = []
     
     try:
         if igPageNotFound in browser.find_element_by_xpath(xpathError).text:
             time.sleep(scrapingSleep)
             browser.close()
-            return post_links
+            return postsLinks
     except:
         pass
 
-    while len(post_links) < numberOfPosts:
+    while len(postsLinks) < numberOfPosts:
         time.sleep(scrapingSleep)
         links = [a.get_attribute('href') for a in browser.find_elements_by_tag_name('a')]
         for link in links:
-            if postUrl in link and link not in post_links:
-                post_links.append(link)
+            if postUrl in link and link not in postsLinks:
+                postsLinks.append(link)
         browser.execute_script(scrollDown)
     browser.close()
-    return post_links[:numberOfPosts]
+    return postsLinks[:numberOfPosts]
 
 
 @valid_account_query_params
@@ -172,9 +173,9 @@ def get_last_posts(feedId, username, numberOfPosts=numbOfPostsDef, scrapingSleep
         date = datetime(year=datetime.now().year-1, month=1, day=1)
         caption = {''}
         try:
-            publish_time = browser.page_source
-            offset = publish_time.find(datePathOffset)
-            date = datetime.strptime(publish_time[offset+24:offset+34], '%Y-%m-%d')
+            publishTime = browser.page_source
+            offset = publishTime.find(datePathOffset)
+            date = datetime.strptime(publishTime[offset+24:offset+34], '%Y-%m-%d')
         except:
             logging.error(str(feedId)+', '+username+', '+link+', datetime not found')
         try:
@@ -187,3 +188,26 @@ def get_last_posts(feedId, username, numberOfPosts=numbOfPostsDef, scrapingSleep
     browser.close()
     _update_date(feedId, username, dates)
     return postsLinks
+
+
+@valid_account_query_params
+def get_last_n_posts(feedId, username, nToGet=nToGetDef, scrapingSleep=scrapSleepDef):
+    urls = _get_posts(feedId, username, nToGet, scrapingSleep)
+    postsLinks = []
+
+    if not _is_all_enabled(feedId, username):
+        browser = webBrowser()
+        for link in urls:
+            browser.get(link)
+            time.sleep(scrapingSleep)
+            caption = {''}
+            try:
+                caption = set(browser.find_element_by_xpath(xpathCaption).text.split())
+                if _contains_any_keyword(feedId, username, caption):
+                    postsLinks.append(link)
+            except:
+                logging.warning(str(feedId)+', '+username+', '+link+', captions not found')
+        browser.close()
+    else:
+        postsLinks = urls
+    return postsLinks[:nToGet]
