@@ -16,10 +16,10 @@ numbOfPostsHelp   = 'posts to check from instagram account'
 
 startMsg           = 'Hello! Im the Instagram Feed bot, you can find out what I can do with /help'
 helpMsg            = 'This is a list of the functions I know:\n'
-noParamsGiven      = 'Please send the command with valid parameters.'
+noParamsGivenMsg   = 'Please send the command with valid parameters.'
+noLastPostsMsg     = 'No posts found.'
 
-
-functionsHelp = "/addaccounts username1 username2 username3 ...\nAdds one or more accounts by their usernames.\n\n/addkeywords username keyword1 keyword2 ...\nAdds one or more keywords to the username's account.\n\n/deleteaccounts username1 username2 username3 ...\nDeletes all accounts with given usernames.\n\n/deletekeywords username keyword1 keyword2 ...\nDeletes all given keywords from given username's account.\n\n/enableall username1 username2 username3 ...\nEnables all posts from each username's account. Set as default.\n\n/enablekeywords username1 username2 username3 ...\nEnables only posts containing each username's account keywords.\n\n/listaccounts\nI'll send a list of all present accounts.\n\n/listkeywords username\nI'll send a list of all the keywords of that username's account."
+functionsHelp = "/addaccounts username1 username2 username3 ...\nAdds one or more accounts by their usernames.\n\n/addkeywords username keyword1 keyword2 ...\nAdds one or more keywords to the username's account.\n\n/deleteaccounts username1 username2 username3 ...\nDeletes all accounts with given usernames.\n\n/deletekeywords username keyword1 keyword2 ...\nDeletes all given keywords from given username's account.\n\n/enableall username1 username2 username3 ...\nEnables all posts from each username's account. Set as default.\n\n/enablekeywords username1 username2 username3 ...\nEnables only posts containing each username's account keywords.\n\n/listaccounts\nI'll send a list of all present accounts.\n\n/listkeywords username\nI'll send a list of all the keywords of that username's account.\n\n/getlastposts [amount] username1 username2 ...\nIll search and send you the last [amount] posts of the given username's accounts. If no amount if given, Ill use the default 2. It can take a little time."
 
 
 checkTimeDefault  = 12*60*60
@@ -58,7 +58,7 @@ def check_user_msg_not_empty(func):
             params = update.message.text.split()[1::]
             if len(params) != 0:
                 return func(bot, update)
-            bot.send_message(chat_id=chatId, text=noParamsGiven)
+            bot.send_message(chat_id=chatId, text=noParamsGivenMsg)
     return check_and_call
 
 
@@ -183,28 +183,30 @@ def list_keywords(bot, update):
 
 @log_user_msg
 @check_user_msg_not_empty
-def list_n_last_posts(bot, update):
+def get_last_n_posts(bot, update):
     userId = update.message.chat_id
     userMsg = update.message.text.split()[1::]
+    
     nPosts = 2
     usernames = userMsg[0::]
     try: 
         nPosts = int(userMsg[0])
         usernames = userMsg[1::]
     except: pass
+
     errors = []
     links = []
     for username in usernames:
-        links = tryexcept(errors, instagramFeeder.get_last_n_posts, userId, username, nPosts)
-    log_errors(userId, errors)
+        res = tryexcept(errors, instagramFeeder.get_last_n_posts, userId, username, nPosts)
+        if res!=None: links+=res
     if len(errors)!=0:
+        log_errors(userId, errors)
         bot.send_message(chat_id=userId, text=process_reply_msg(errors))
-    else:
-        if len(links)==0:
-            bot.send_message(chat_id=userId, text='No posts found.')
-        else:
-            for link in links:
-                bot.send_message(chat_id=userId, text=link)
+    if len(links)!=0:
+        for link in links:
+            bot.send_message(chat_id=userId, text=link)
+    elif len(errors)==0: bot.send_message(chat_id=userId, text=noLastPostsMsg)
+
 
 
 @log_user_msg
@@ -249,7 +251,7 @@ def main():
     updater.dispatcher.add_handler(CommandHandler('deletekeywords', delete_keywords))
     updater.dispatcher.add_handler(CommandHandler('enableall', enable_all))
     updater.dispatcher.add_handler(CommandHandler('enablekeywords', enable_keywords))
-    updater.dispatcher.add_handler(CommandHandler('getlastposts', list_n_last_posts))
+    updater.dispatcher.add_handler(CommandHandler('getlastposts', get_last_n_posts))
 
     job = updater.job_queue
     job.run_repeating(check_feed, interval=botArgs.ct, first=botArgs.fc)

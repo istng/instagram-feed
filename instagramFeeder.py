@@ -141,7 +141,7 @@ def _get_posts(feedId, username, numberOfPosts, scrapingSleep):
     browser = webBrowser()
     browser.get(url)
     postsLinks = []
-    
+
     try:
         if igPageNotFound in browser.find_element_by_xpath(xpathError).text:
             time.sleep(scrapingSleep)
