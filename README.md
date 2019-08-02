@@ -12,14 +12,14 @@ I generalized the idea of live performances of bands to any kind of instagram ac
 The language used is python. The bot uses `telegram-python-bot`, but the tool itself to get new publications is independent from the bot, and uses the `selenium` module to get the posts. I'm currently using `sqlite` as the database engine to store all the pertinent information via `Pony ORM`.
 
 ## Updates and todos
-For now I'm going to use the feeder as is, fixing bugs depending on their severity as I encounter them. I already have updates and todos planned for the future, some of them are:
+I'm going to be updating the bot now and again fixing bugs depending on their severity as I encounter them and making upgrades. I already have updates and todos planned for the future, some of them are:
 - New functionalities:
   - Add functions to stop and resume the job that checks whether or not there are new posts
-  - Add functions to get the last n posts, regardless of date
   - Process error messages, given by the feeder, to send through the bot in a more friendly user manner
   - Add OCR to search for the given keywords on the posts pictures also
 - Bug fixes:
-  - Fix date not found on posts error
+  - Fix date not found on posts error, patched but not fixed
+  - Fix _page not found_ from instagram, patched but not fixed
 - General upgrades:
   - Investigate alternative solutions to `selenium`
 
