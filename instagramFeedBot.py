@@ -9,7 +9,6 @@ import logging
 
 telegramLogger = logging.getLogger('telegram')
 telegramLogger.setLevel(logging.INFO)
-
 instagramFeederLogger = logging.getLogger('instagramFeeder')
 
 

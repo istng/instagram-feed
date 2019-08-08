@@ -6,6 +6,13 @@ from asserts import *
 import logging
 
 
+logging.basicConfig(filename=logFile, format='%(asctime)s, %(name)s, %(levelname)s, %(message)s',
+    level=logLevel)
+logger = logging.getLogger()
+seleniumLogger = logging.getLogger('selenium')
+seleniumLogger.setLevel(logging.INFO)
+
+
 logLevel       = logging.DEBUG
 logFile        = './log_'+datetime.now().strftime('%Y.%m.%d')+'.log'
 webBrowser     = swd.Chrome
@@ -19,13 +26,6 @@ igPageNotFound = 'Sorry, this page isn\'t available.'
 numbOfPostsDef = 5
 scrapSleepDef  = 10
 nToGetDef      = 2
-
-
-logging.basicConfig(filename=logFile, format='%(asctime)s, %(name)s, %(levelname)s, %(message)s',
-    level=logLevel)
-logger = logging.getLogger()
-seleniumLogger = logging.getLogger('selenium')
-seleniumLogger.setLevel(logging.INFO)
 
 
 def bind_db(provider, path):
