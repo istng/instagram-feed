@@ -149,7 +149,7 @@ def _get_posts(feedId, username, numberOfPosts, scrapingSleep):
     try:
         if igPageNotFound in browser.find_element_by_xpath(xpathError).text:
             time.sleep(scrapingSleep)
-            browser.close()
+            browser.quit()
             return postsLinks
     except:
         pass
@@ -161,7 +161,7 @@ def _get_posts(feedId, username, numberOfPosts, scrapingSleep):
             if postUrl in link and link not in postsLinks:
                 postsLinks.append(link)
         browser.execute_script(scrollDown)
-    browser.close()
+    browser.quit()
     logger.debug(str(feedId)+', '+username+', '+'_get_posts, '+str(postsLinks))
     return postsLinks[:numberOfPosts]
 
@@ -191,7 +191,7 @@ def get_last_posts(feedId, username, numberOfPosts=numbOfPostsDef, scrapingSleep
             logger.debug(str(feedId)+', '+username+', '+'get_last_posts, '+link)
             postsLinks.append(link)
             dates.append(date)
-    browser.close()
+    browser.quit()
     _update_date(feedId, username, dates)
     return postsLinks
 
@@ -213,7 +213,7 @@ def get_last_n_posts(feedId, username, nToGet=nToGetDef, scrapingSleep=scrapSlee
                     postsLinks.append(link)
             except:
                 logger.warning(str(feedId)+', '+username+', '+link+', captions not found')
-        browser.close()
+        browser.quit()
     else:
         postsLinks = urls
     return postsLinks[:nToGet]
