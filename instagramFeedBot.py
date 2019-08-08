@@ -4,6 +4,13 @@ from telegram.ext import BaseFilter, MessageHandler, Filters
 import argparse
 from datetime import datetime, timedelta
 import instagramFeeder
+import logging
+
+
+telegramLogger = logging.getLogger('telegram')
+telegramLogger.setLevel(logging.INFO)
+
+instagramFeederLogger = logging.getLogger('instagramFeeder')
 
 
 argumentsDescMsg  = 'Bot initialization parameters.'
@@ -12,6 +19,7 @@ economyDBHelp     = 'economy DB path'
 firstCheckArgHelp = 'seconds to make the first check'
 checkTimeArgHelp  = 'seconds to check for new publications'
 numbOfPostsHelp   = 'posts to check from instagram account'
+userIdHelp        = 'user id to limit the bot usage'
 
 
 startMsg           = 'Hello! Im the Instagram Feed bot, you can find out what I can do with /help'
@@ -25,7 +33,7 @@ functionsHelp = "/addaccounts username1 username2 username3 ...\nAdds one or mor
 checkTimeDefault  = 12*60*60
 firstCheckDefault = 60
 numberOfPostsDef  = 5
-
+userIdDef         = -1
 
 def parse_input():
     parser = argparse.ArgumentParser(description=argumentsDescMsg, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -35,6 +43,7 @@ def parse_input():
     parser.add_argument('-fc', metavar='FIRST CHECK', type=int, default=firstCheckDefault, help=firstCheckArgHelp)
     parser.add_argument('-ct', metavar='CHECK TIME', type=int, default=checkTimeDefault, help=checkTimeArgHelp)
     parser.add_argument('-np', metavar='NUMBER OF POSTS', type=int, default=numberOfPostsDef, help=numbOfPostsHelp)
+    parser.add_argument('-uid', metavar='USER ID', type=int, default=userIdDef, help=userIdHelp)
     args = parser.parse_args()
     return args
 
@@ -43,13 +52,13 @@ def log_user_msg(func):
     def log_and_call(bot, update):
         chatId = update.message.chat_id
         params = update.message.text
-        instagramFeeder.logging.info(str(chatId)+', '+params)
+        instagramFeederLogger.info(str(chatId)+', '+params)
         return func(bot, update)
     return log_and_call
 
 
 def log_errors(userId, errors):
-    if errors!=[]: instagramFeeder.logging.error(str(userId)+', '+str(errors))
+    if errors!=[]: instagramFeederLogger.error(str(userId)+', '+str(errors))
 
 
 def check_user_msg_not_empty(func):
@@ -159,7 +168,7 @@ def list_username_accounts(bot, update):
     replyMsg = '\n'.join(usernames)
     if len(usernames)==0:
         replyMsg = 'There are no accounts added yet.'
-        instagramFeeder.logging.warning(str(userId)+', '+replyMsg)
+        instagramFeederLogger.warning(str(userId)+', '+replyMsg)
     bot.send_message(chat_id=userId, text=replyMsg)
 
 
@@ -173,11 +182,11 @@ def list_keywords(bot, update):
         keywords = [k for k in instagramFeeder.list_keywords(userId, username)]
         if keywords==[]:
             replyMsg = 'There are no keywords added yet for %s.'%(username)
-            instagramFeeder.logging.warning(str(userId)+', '+replyMsg)
+            instagramFeederLogger.warning(str(userId)+', '+replyMsg)
         else: replyMsg = ' '.join(keywords)
     except ValueError as e:
         replyMsg = str(e)
-        instagramFeeder.logging.error(str(userId)+', '+replyMsg)
+        instagramFeederLogger.error(str(userId)+', '+replyMsg)
     bot.send_message(chat_id=userId, text=replyMsg)
 
 
@@ -204,6 +213,7 @@ def get_last_n_posts(bot, update):
         bot.send_message(chat_id=userId, text=process_reply_msg(errors))
     if len(links)!=0:
         for link in links:
+            instagramFeederLogger.debug(str(userId)+', get_last_n_posts, '+link)
             bot.send_message(chat_id=userId, text=link)
     elif len(errors)==0: bot.send_message(chat_id=userId, text=noLastPostsMsg)
 
@@ -227,31 +237,37 @@ def check_feed(bot, job):
         for username in usernames:
             posts = instagramFeeder.get_last_posts(feedee, username, botArgs.np)
             for post in posts:
-                instagramFeeder.logging.info(str(feedee)+', '+post)
+                instagramFeederLogger.debug(str(feedee)+', check_feed, '+post)
                 bot.send_message(chat_id=feedee, text=post)
 
 
+class FilterUserId(BaseFilter):
+    def filter(self, message):
+        return botArgs.uid==-1 or botArgs.uid == message.from_user.id
+
+
 def main():
-    instagramFeeder.logging.info('Started running')
+    instagramFeederLogger.info('Started running')
     global botArgs
     botArgs = parse_input()
-    instagramFeeder.logging.info('Bot arguments: '+str(vars(botArgs)))
+    instagramFeederLogger.info('Bot arguments: '+str(vars(botArgs)))
     
     instagramFeeder.bind_db('sqlite', botArgs.economyDB)
 
+    filterUseId = FilterUserId()
 
     updater = Updater(botArgs.token)
-    updater.dispatcher.add_handler(CommandHandler('start', start))
-    updater.dispatcher.add_handler(CommandHandler('help', help))
-    updater.dispatcher.add_handler(CommandHandler('addaccounts', add_accounts))
-    updater.dispatcher.add_handler(CommandHandler('addkeywords', add_keywords))
-    updater.dispatcher.add_handler(CommandHandler('listaccounts', list_username_accounts))
-    updater.dispatcher.add_handler(CommandHandler('listkeywords', list_keywords))
-    updater.dispatcher.add_handler(CommandHandler('deleteaccounts', delete_accounts))
-    updater.dispatcher.add_handler(CommandHandler('deletekeywords', delete_keywords))
-    updater.dispatcher.add_handler(CommandHandler('enableall', enable_all))
-    updater.dispatcher.add_handler(CommandHandler('enablekeywords', enable_keywords))
-    updater.dispatcher.add_handler(CommandHandler('getlastposts', get_last_n_posts))
+    updater.dispatcher.add_handler(CommandHandler('start', start, filterUseId))
+    updater.dispatcher.add_handler(CommandHandler('help', help, filterUseId))
+    updater.dispatcher.add_handler(CommandHandler('addaccounts', add_accounts, filterUseId))
+    updater.dispatcher.add_handler(CommandHandler('addkeywords', add_keywords, filterUseId))
+    updater.dispatcher.add_handler(CommandHandler('listaccounts', list_username_accounts, filterUseId))
+    updater.dispatcher.add_handler(CommandHandler('listkeywords', list_keywords, filterUseId))
+    updater.dispatcher.add_handler(CommandHandler('deleteaccounts', delete_accounts, filterUseId))
+    updater.dispatcher.add_handler(CommandHandler('deletekeywords', delete_keywords, filterUseId))
+    updater.dispatcher.add_handler(CommandHandler('enableall', enable_all, filterUseId))
+    updater.dispatcher.add_handler(CommandHandler('enablekeywords', enable_keywords, filterUseId))
+    updater.dispatcher.add_handler(CommandHandler('getlastposts', get_last_n_posts, filterUseId))
 
     job = updater.job_queue
     job.run_repeating(check_feed, interval=botArgs.ct, first=botArgs.fc)
