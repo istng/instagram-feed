@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import selenium.webdriver as swd
 import time
 from models import *
@@ -6,6 +6,14 @@ from asserts import *
 import logging
 
 
+logging.basicConfig(filename=logFile, format='%(asctime)s, %(name)s, %(levelname)s, %(message)s',
+    level=logLevel)
+logger = logging.getLogger()
+seleniumLogger = logging.getLogger('selenium')
+seleniumLogger.setLevel(logging.INFO)
+
+
+logLevel       = logging.DEBUG
 logFile        = './log_'+datetime.now().strftime('%Y.%m.%d')+'.log'
 webBrowser     = swd.Chrome
 accountUrl     = 'https://www.instagram.com/%s/'
@@ -20,10 +28,6 @@ scrapSleepDef  = 10
 nToGetDef      = 2
 
 
-logging.basicConfig(filename=logFile, format='%(asctime)s, %(name)s, %(levelname)s, %(message)s',
-    level=logging.INFO)
-
-
 def bind_db(provider, path):
     db.bind(provider, path, create_db=True)
     db.generate_mapping(create_tables=True)
@@ -33,7 +37,7 @@ def bind_db(provider, path):
 @db_session
 def add_account(feedId, username):
     feedee = Feedee[feedId]
-    Account(username=username, lastUpdatedDate=datetime.now(), keywordsEnabled=False, feedee=feedee)
+    Account(username=username, lastUpdatedDate=datetime.today()-timedelta(days=1), keywordsEnabled=False, feedee=feedee)
     commit()
     return 0
 
@@ -158,6 +162,7 @@ def _get_posts(feedId, username, numberOfPosts, scrapingSleep):
                 postsLinks.append(link)
         browser.execute_script(scrollDown)
     browser.close()
+    logger.debug(str(feedId)+', '+username+', '+'_get_posts, '+str(postsLinks))
     return postsLinks[:numberOfPosts]
 
 
@@ -177,12 +182,13 @@ def get_last_posts(feedId, username, numberOfPosts=numbOfPostsDef, scrapingSleep
             offset = publishTime.find(datePathOffset)
             date = datetime.strptime(publishTime[offset+24:offset+34], '%Y-%m-%d')
         except:
-            logging.error(str(feedId)+', '+username+', '+link+', datetime not found')
+            logger.error(str(feedId)+', '+username+', '+link+', datetime not found')
         try:
             caption = set(browser.find_element_by_xpath(xpathCaption).text.split())
         except:
-            logging.warning(str(feedId)+', '+username+', '+link+', captions not found')
+            logger.warning(str(feedId)+', '+username+', '+link+', captions not found')
         if _is_newer(feedId, username, date) and (_is_all_enabled(feedId, username) or _contains_any_keyword(feedId, username, caption)):
+            logger.debug(str(feedId)+', '+username+', '+'get_last_posts, '+link)
             postsLinks.append(link)
             dates.append(date)
     browser.close()
@@ -206,7 +212,7 @@ def get_last_n_posts(feedId, username, nToGet=nToGetDef, scrapingSleep=scrapSlee
                 if _contains_any_keyword(feedId, username, caption):
                     postsLinks.append(link)
             except:
-                logging.warning(str(feedId)+', '+username+', '+link+', captions not found')
+                logger.warning(str(feedId)+', '+username+', '+link+', captions not found')
         browser.close()
     else:
         postsLinks = urls
