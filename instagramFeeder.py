@@ -1,31 +1,21 @@
 from datetime import datetime, timedelta
-import selenium.webdriver as swd
+import instaloader
 import time
 from models import *
 from asserts import *
 import logging
 
 
+logLevel       = logging.INFO
+logFile        = './log_'+datetime.now().strftime('%Y.%m.%d')+'.log'
+postLinkStr    = 'https://www.instagram.com/p/'
+numbOfPostsDef = 5
+nToGetDef      = 2
+
+
 logging.basicConfig(filename=logFile, format='%(asctime)s, %(name)s, %(levelname)s, %(message)s',
     level=logLevel)
 logger = logging.getLogger()
-seleniumLogger = logging.getLogger('selenium')
-seleniumLogger.setLevel(logging.INFO)
-
-
-logLevel       = logging.DEBUG
-logFile        = './log_'+datetime.now().strftime('%Y.%m.%d')+'.log'
-webBrowser     = swd.Chrome
-accountUrl     = 'https://www.instagram.com/%s/'
-postUrl        = 'https://www.instagram.com/p/'
-scrollDown     = 'window.scrollTo(0, document.body.scrollHeight);'    
-datePathOffset = '_1o9PC Nzb55'
-xpathCaption   = '//*[@id="react-root"]/section/main/div/div/article/div[2]/div[1]/ul/div[1]/li/div/div/div/span'
-xpathError     = '/html/body'
-igPageNotFound = 'Sorry, this page isn\'t available.'
-numbOfPostsDef = 5
-scrapSleepDef  = 10
-nToGetDef      = 2
 
 
 def bind_db(provider, path):
@@ -140,80 +130,29 @@ def _update_date(feedId, username, dates):
     account.lastUpdatedDate = newestDate
 
 
-def _get_posts(feedId, username, numberOfPosts, scrapingSleep):
-    url = accountUrl%(username)
-    browser = webBrowser()
-    browser.get(url)
-    postsLinks = []
-
-    try:
-        if igPageNotFound in browser.find_element_by_xpath(xpathError).text:
-            time.sleep(scrapingSleep)
-            browser.quit()
-            return postsLinks
-    except:
-        pass
-
-    while len(postsLinks) < numberOfPosts:
-        time.sleep(scrapingSleep)
-        links = [a.get_attribute('href') for a in browser.find_elements_by_tag_name('a')]
-        for link in links:
-            if postUrl in link and link not in postsLinks:
-                postsLinks.append(link)
-        browser.execute_script(scrollDown)
-    browser.quit()
-    logger.debug(str(feedId)+', '+username+', '+'_get_posts, '+str(postsLinks))
-    return postsLinks[:numberOfPosts]
+def _get_posts(feedId, username, numberOfPosts):
+    L = instaloader.Instaloader()
+    logger.debug(str(feedId)+', '+username+', fetching posts')
+    profile = instaloader.Profile.from_username(L.context, username)
+    return [post for post in profile.get_posts()][:numberOfPosts]
 
 
 @valid_account_query_params
-def get_last_posts(feedId, username, numberOfPosts=numbOfPostsDef, scrapingSleep=scrapSleepDef):
-    urls = _get_posts(feedId, username, numberOfPosts, scrapingSleep)
-    browser = webBrowser()
+def get_last_posts(feedId, username, numberOfPosts=numbOfPostsDef):
+    logger.debug(str(feedId)+', '+username+', getting last posts')
+    posts = _get_posts(feedId, username, numberOfPosts)
     postsLinks = []
     dates = []
-    for link in urls:
-        browser.get(link)
-        time.sleep(scrapingSleep)
-        date = datetime(year=datetime.now().year-1, month=1, day=1)
-        caption = {''}
-        try:
-            publishTime = browser.page_source
-            offset = publishTime.find(datePathOffset)
-            date = datetime.strptime(publishTime[offset+24:offset+34], '%Y-%m-%d')
-        except:
-            logger.error(str(feedId)+', '+username+', '+link+', datetime not found')
-        try:
-            caption = set(browser.find_element_by_xpath(xpathCaption).text.split())
-        except:
-            logger.warning(str(feedId)+', '+username+', '+link+', captions not found')
-        if _is_newer(feedId, username, date) and (_is_all_enabled(feedId, username) or _contains_any_keyword(feedId, username, caption)):
-            logger.debug(str(feedId)+', '+username+', '+'get_last_posts, '+link)
-            postsLinks.append(link)
-            dates.append(date)
-    browser.quit()
+    for post in posts:
+        if _is_newer(feedId, username, post.date) and (_is_all_enabled(feedId, username) or _contains_any_keyword(feedId, username, post.caption)):
+            postsLinks.append(postLinkStr+post.shortcode)
+            dates.append(post.date)
     _update_date(feedId, username, dates)
     return postsLinks
 
 
 @valid_account_query_params
-def get_last_n_posts(feedId, username, nToGet=nToGetDef, scrapingSleep=scrapSleepDef):
-    urls = _get_posts(feedId, username, nToGet, scrapingSleep)
-    postsLinks = []
-
-    if not _is_all_enabled(feedId, username):
-        browser = webBrowser()
-        for link in urls:
-            browser.get(link)
-            time.sleep(scrapingSleep)
-            caption = {''}
-            try:
-                caption = set(browser.find_element_by_xpath(xpathCaption).text.split())
-                if _contains_any_keyword(feedId, username, caption):
-                    postsLinks.append(link)
-            except:
-                logger.warning(str(feedId)+', '+username+', '+link+', captions not found')
-        browser.quit()
-    else:
-        postsLinks = urls
-    return postsLinks[:nToGet]
+def get_last_n_posts(feedId, username, nToGet=nToGetDef):
+    logger.debug(str(feedId)+', '+username+', getting last n posts')
+    posts = _get_posts(feedId, username, nToGet)
+    return [postLinkStr+post.shortcode for post in posts][:nToGet]
