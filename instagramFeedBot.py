@@ -2,7 +2,6 @@ import telegram
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, InlineQueryHandler
 from telegram.ext import BaseFilter, MessageHandler, Filters
 import argparse
-from datetime import datetime, timedelta
 import instagramFeeder
 import logging
 
@@ -77,6 +76,8 @@ def tryexcept(errors, func, *args):
         elif len(args)==3:
             return func(args[0], args[1], args[2])
     except ValueError as e:
+        errors.append(str(e))
+    except instagramFeeder.instaloader.exceptions.InstaloaderException as e:
         errors.append(str(e))
 
 
