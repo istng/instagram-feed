@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta
 import instaloader
-import time
 from models import *
 from asserts import *
 import logging

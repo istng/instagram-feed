@@ -2,7 +2,6 @@ import telegram
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, InlineQueryHandler
 from telegram.ext import BaseFilter, MessageHandler, Filters
 import argparse
-from datetime import datetime, timedelta
 import instagramFeeder
 import logging
 
