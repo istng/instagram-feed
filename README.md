@@ -11,7 +11,7 @@ Alternatively, you can also receive all new posts from the accounts you want. An
 
 
 ## Implementation
-The language used is python. The bot uses `telegram-python-bot`, but the tool itself to get new publications is independent from the bot, and uses the `selenium` module to get the posts. I'm currently using `sqlite` as the database engine to store all the pertinent information via `Pony ORM`.
+The language used is python. The bot uses `telegram-python-bot`, but the tool itself to get new publications is independent from the bot, and uses the `instaloader` module to get the posts. I'm currently using `sqlite` as the database engine to store all the pertinent information via `Pony ORM`.
 
 ## Updates and todos
 I'm going to be updating the bot now and again fixing bugs depending on their severity as I encounter them and making upgrades. I already have updates and todos planned for the future, some of them are:
@@ -23,7 +23,7 @@ I'm going to be updating the bot now and again fixing bugs depending on their se
   - Fix date not found on posts error, patched but not fixed
   - Fix _page not found_ from instagram, patched but not fixed
 - General upgrades:
-  - Investigate alternative solutions to `selenium`
+  - Optimize the usage of `instaloader`
 
 
 Feel free to ask me any questions or make any suggestions.
