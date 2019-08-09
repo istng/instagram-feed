@@ -19,9 +19,6 @@ I'm going to be updating the bot now and again fixing bugs depending on their se
   - Add functions to stop and resume the job that checks whether or not there are new posts
   - Process error messages, given by the feeder, to send through the bot in a more friendly user manner
   - Add OCR to search for the given keywords on the posts pictures also
-- Bug fixes:
-  - Fix date not found on posts error, patched but not fixed
-  - Fix _page not found_ from instagram, patched but not fixed
 - General upgrades:
   - Optimize the usage of `instaloader`
 

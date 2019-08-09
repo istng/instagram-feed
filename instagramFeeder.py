@@ -27,6 +27,7 @@ def bind_db(provider, path):
 @db_session
 def add_account(feedId, username):
     feedee = Feedee[feedId]
+    instaloader.Profile.from_username(instaloader.Instaloader().context, username) #checking if ig account exists
     Account(username=username, lastUpdatedDate=datetime.today()-timedelta(days=1), keywordsEnabled=False, feedee=feedee)
     commit()
     return 0
