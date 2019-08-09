@@ -13,7 +13,7 @@ instagramFeederLogger = logging.getLogger('instagramFeeder')
 
 argumentsDescMsg  = 'Bot initialization parameters.'
 tokenArgHelp      = 'telegram token'
-economyDBHelp     = 'economy DB path'
+feederDBHelp     = 'feeder DB path'
 firstCheckArgHelp = 'seconds to make the first check'
 checkTimeArgHelp  = 'seconds to check for new publications'
 numbOfPostsHelp   = 'posts to check from instagram account'
@@ -37,7 +37,7 @@ def parse_input():
     parser = argparse.ArgumentParser(description=argumentsDescMsg, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     
     parser.add_argument('token', metavar='TOKEN', type=str, help=tokenArgHelp)
-    parser.add_argument('economyDB', metavar='ECONOMY DB', type=str, help=economyDBHelp)
+    parser.add_argument('feederDB', metavar='FEEDER DB', type=str, help=feederDBHelp)
     parser.add_argument('-fc', metavar='FIRST CHECK', type=int, default=firstCheckDefault, help=firstCheckArgHelp)
     parser.add_argument('-ct', metavar='CHECK TIME', type=int, default=checkTimeDefault, help=checkTimeArgHelp)
     parser.add_argument('-np', metavar='NUMBER OF POSTS', type=int, default=numberOfPostsDef, help=numbOfPostsHelp)
