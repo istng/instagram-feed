@@ -77,8 +77,6 @@ def tryexcept(errors, func, *args):
             return func(args[0], args[1], args[2])
     except ValueError as e:
         errors.append(str(e))
-    except instagramFeeder.instaloader.exceptions.InstaloaderException as e:
-        errors.append(str(e))
 
 
 def process_reply_msg(errors):
@@ -252,7 +250,7 @@ def main():
     botArgs = parse_input()
     instagramFeederLogger.info('Bot arguments: '+str(vars(botArgs)))
     
-    instagramFeeder.bind_db('sqlite', botArgs.economyDB)
+    instagramFeeder.bind_db('sqlite', botArgs.feederDB)
 
     filterUseId = FilterUserId()
 
