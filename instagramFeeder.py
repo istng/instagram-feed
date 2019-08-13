@@ -27,6 +27,7 @@ def bind_db(provider, path):
 @db_session
 def add_account(feedId, username):
     feedee = Feedee[feedId]
+    _get_raw_data_from_json(feedId, username) #checking if account exists
     Account(username=username, lastUpdatedDate=datetime.today()-timedelta(days=1), keywordsEnabled=False, feedee=feedee)
     commit()
     return 0
@@ -132,6 +133,7 @@ def _update_date(feedId, username, dates):
 
 def _get_raw_data_from_json(feedId, username):
     raw = requests.get('https://www.instagram.com/'+username+'/?__a=1')
+    raw.raise_for_status()
     return json.loads(raw.text)['graphql']['user']['edge_owner_to_timeline_media']['edges']
 
 
