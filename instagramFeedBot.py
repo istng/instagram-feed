@@ -11,28 +11,34 @@ telegramLogger.setLevel(logging.INFO)
 logger = logging.getLogger()
 
 
-argumentsDescMsg  = 'Bot initialization parameters.'
-tokenArgHelp      = 'telegram token'
-feederDBHelp     = 'feeder DB path'
-firstCheckArgHelp = 'seconds to make the first check'
-checkTimeArgHelp  = 'seconds to check for new publications'
-numbOfPostsHelp   = 'posts to check from instagram account'
-userIdHelp        = 'user id to limit the bot usage'
+argumentsDescMsg   = 'Bot initialization parameters.'
+tokenArgHelp       = 'telegram token'
+feederDBHelp       = 'feeder DB path'
+firstCheckArgHelp  = 'seconds to make the first check'
+checkTimeArgHelp   = 'seconds to check for new publications'
+numbOfPostsHelp    = 'posts to check from instagram account'
+maxAccsPerUserHelp = 'max accounts per telegram user'
+maxKeywsPerAccHelp = 'max keywords per account'
+userIdHelp         = 'user id to limit the bot usage'
 
 
-startMsg           = 'Hello! Im the Instagram Feed bot, you can find out what I can do with /help'
-helpMsg            = 'This is a list of the functions I know:\n'
-noParamsGivenMsg   = 'Please send the command with valid parameters.'
-noLastPostsMsg     = 'No posts found.'
+startMsg              = 'Hello! Im the Instagram Feed bot, you can find out what I can do with /help'
+helpMsg               = 'This is a list of the functions I know:\n'
+noParamsGivenMsg      = 'Please send the command with valid parameters.'
+noLastPostsMsg        = 'No posts found.'
+maxAccountsReachedMsg = 'The maximum subscriptions are %s. You added %s, remaining %s.'
+maxKeywordsReachedMsg = 'The maximum keywords for each account is %s. You added %s to this account, remaining %s.'
 
 
 functionsHelp = "/addaccounts username1 username2 username3 ...\nAdds one or more accounts by their usernames.\n\n/addkeywords username keyword1 keyword2 ...\nAdds one or more keywords to the username's account.\n\n/deleteaccounts username1 username2 username3 ...\nDeletes all accounts with given usernames.\n\n/deletekeywords username keyword1 keyword2 ...\nDeletes all given keywords from given username's account.\n\n/enableall username1 username2 username3 ...\nEnables all posts from each username's account. Set as default.\n\n/enablekeywords username1 username2 username3 ...\nEnables only posts containing each username's account keywords.\n\n/listaccounts\nI'll send a list of all present accounts.\n\n/listkeywords username\nI'll send a list of all the keywords of that username's account.\n\n/lastposts [amount] username1 username2 ...\nIll search and send you the last [amount] posts of the given username's accounts. If no amount if given, Ill use the default 2. It can take a little time."
 
 
-checkTimeDefault  = 12*60*60
-firstCheckDefault = 60
-numberOfPostsDef  = 5
-userIdDef         = -1
+checkTimeDefault   = 12*60*60
+firstCheckDefault  = 60
+numberOfPostsDef   = 5
+userIdDef          = -1
+maxAccsPerUserDef  = 20
+maxKeywsPerAccDef  = 100
 
 
 def parse_input():
@@ -43,6 +49,8 @@ def parse_input():
     parser.add_argument('-fc', metavar='FIRST CHECK', type=int, default=firstCheckDefault, help=firstCheckArgHelp)
     parser.add_argument('-ct', metavar='CHECK TIME', type=int, default=checkTimeDefault, help=checkTimeArgHelp)
     parser.add_argument('-np', metavar='NUMBER OF POSTS', type=int, default=numberOfPostsDef, help=numbOfPostsHelp)
+    parser.add_argument('-mau', metavar='MAX ACCS PER USER', type=int, default=maxAccsPerUserDef, help=maxAccsPerUserHelp)
+    parser.add_argument('-mka', metavar='MAX KEYWS PER ACCOUNT', type=int, default=maxKeywsPerAccDef, help=maxKeywsPerAccHelp)
     parser.add_argument('-uid', metavar='USER ID', type=int, default=userIdDef, help=userIdHelp)
     args = parser.parse_args()
     return args
@@ -94,6 +102,12 @@ def process_reply_msg(errors):
 def add_accounts(bot, update):
     userId = update.message.chat_id
     usernames = update.message.text.split()[1::]
+    crrnAccsAmnt = len(instagramFeeder.list_usernames(userId))
+    addAccsAmnt = len(usernames)
+    if crrnAccsAmnt+addAccsAmnt > botArgs.mau:
+        remaining = botArgs.mau-crrnAccsAmnt
+        bot.send_message(chat_id=userId, text=maxAccountsReachedMsg%(botArgs.mau, crrnAccsAmnt, remaining))
+        return
     errors = []
     for username in usernames:
         tryexcept(errors, instagramFeeder.add_account, userId, username)
@@ -108,6 +122,12 @@ def add_keywords(bot, update):
     userMsg = update.message.text.split()[1::]
     username = userMsg[0]
     keywords = userMsg[1::]
+    crrnKeywsAmnt = len(instagramFeeder.list_keywords(userId, username))
+    addKeywsAmnt = len(keywords)
+    if crrnKeywsAmnt+addKeywsAmnt > botArgs.mka:
+        remaining = botArgs.mka-crrnKeywsAmnt
+        bot.send_message(chat_id=userId, text=maxKeywordsReachedMsg%(botArgs.mka, crrnKeywsAmnt, remaining))
+        return
     errors = []
     for keyword in keywords:
         tryexcept(errors, instagramFeeder.add_keyword, userId, username, keyword)

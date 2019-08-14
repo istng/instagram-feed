@@ -26,7 +26,6 @@ def bind_db(provider, path):
 @valid_add_account_params
 @db_session
 def add_account(feedId, username):
-    logger.info(str(feedId)+', '+username+', test')
     feedee = Feedee[feedId]
     _get_raw_data_from_json(feedId, username) #checking if account exists
     Account(username=username, lastUpdatedDate=datetime.today()-timedelta(days=1), keywordsEnabled=False, feedee=feedee)
