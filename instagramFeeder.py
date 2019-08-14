@@ -26,6 +26,7 @@ def bind_db(provider, path):
 @valid_add_account_params
 @db_session
 def add_account(feedId, username):
+    logger.info(str(feedId)+', '+username+', test')
     feedee = Feedee[feedId]
     _get_raw_data_from_json(feedId, username) #checking if account exists
     Account(username=username, lastUpdatedDate=datetime.today()-timedelta(days=1), keywordsEnabled=False, feedee=feedee)
@@ -137,17 +138,17 @@ def _get_raw_data_from_json(feedId, username):
     return json.loads(raw.text)['graphql']['user']['edge_owner_to_timeline_media']['edges']
 
 
-def _get_date_from_edge(feedId, edge):
+def _date_from_edge(edge):
     return datetime.fromtimestamp(edge['node']['taken_at_timestamp'])
 
 
-def _get_caption_from_edge(feedId, edge):
+def _caption_from_edge(edge):
     if len(edge['node']['edge_media_to_caption']['edges'])!=0:
         return edge['node']['edge_media_to_caption']['edges'][0]['node']['text']
     return ''
 
 
-def _get_post_shortcode_from_edge(feedId, edge):
+def _shortcode_from_edge(edge):
     return edge['node']['shortcode']
 
 
@@ -158,10 +159,10 @@ def get_last_posts(feedId, username, numberOfPosts=numbOfPostsDef):
     postsLinks = []
     dates = []
     for edge in rawData:
-        date = _get_date_from_edge(feedId, edge)
-        caption = _get_caption_from_edge(feedId, edge)
+        date = _date_from_edge(edge)
+        caption = _caption_from_edge(edge)
         if _is_newer(feedId, username, date) and (_is_all_enabled(feedId, username) or _contains_any_keyword(feedId, username, caption)):
-            shortcode = _get_post_shortcode_from_edge(feedId, edge)
+            shortcode = _shortcode_from_edge(edge)
             postsLinks.append(postLinkStr+shortcode)
             dates.append(date)
     _update_date(feedId, username, dates)
@@ -174,6 +175,6 @@ def get_last_n_posts(feedId, username, nToGet=nToGetDef):
     rawData = _get_raw_data_from_json(feedId, username)
     postsLinks = []
     for edge in rawData:
-        shortcode = _get_post_shortcode_from_edge(feedId, edge)
+        shortcode = _shortcode_from_edge(edge)
         postsLinks.append(postLinkStr+shortcode)
     return postsLinks[:nToGet]
