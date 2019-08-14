@@ -11,16 +11,14 @@ Alternatively, you can also receive all new posts from the accounts you want. An
 
 
 ## Implementation
-The language used is python. The bot uses `telegram-python-bot`, but the tool itself to get new publications is independent from the bot, and uses the `instaloader` module to get the posts. I'm currently using `sqlite` as the database engine to store all the pertinent information via `Pony ORM`.
+The language used is python. The bot uses `telegram-python-bot`, but the tool itself to get new publications is independent from the bot, and uses the `requests` and `json` modules to get the posts. Using `sqlite` as the database engine to store all the pertinent information via `Pony ORM`.
 
 ## Updates and todos
-I'm going to be updating the bot now and again fixing bugs depending on their severity as I encounter them and making upgrades. I already have updates and todos planned for the future, some of them are:
+I'm going to be updating the bot now and again, fixing bugs, as I encounter them, depending on their severity, and making upgrades. I already have updates and todos planned for the future, some of them are:
 - New functionalities:
   - Add functions to stop and resume the job that checks whether or not there are new posts
   - Process error messages, given by the feeder, to send through the bot in a more friendly user manner
   - Add OCR to search for the given keywords on the posts pictures also
-- General upgrades:
-  - Optimize the usage of `instaloader`
 
 
 Feel free to ask me any questions or make any suggestions.

@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
-import instaloader
+import requests
+import json
 from models import *
 from asserts import *
 import logging
@@ -25,8 +26,9 @@ def bind_db(provider, path):
 @valid_add_account_params
 @db_session
 def add_account(feedId, username):
+    logger.info(str(feedId)+', '+username+', test')
     feedee = Feedee[feedId]
-    instaloader.Profile.from_username(instaloader.Instaloader().context, username) #checking if ig account exists
+    _get_raw_data_from_json(feedId, username) #checking if account exists
     Account(username=username, lastUpdatedDate=datetime.today()-timedelta(days=1), keywordsEnabled=False, feedee=feedee)
     commit()
     return 0
@@ -130,29 +132,49 @@ def _update_date(feedId, username, dates):
     account.lastUpdatedDate = newestDate
 
 
-def _get_posts(feedId, username, numberOfPosts):
-    L = instaloader.Instaloader()
-    logger.debug(str(feedId)+', '+username+', fetching posts')
-    profile = instaloader.Profile.from_username(L.context, username)
-    return [post for post in profile.get_posts()][:numberOfPosts]
+def _get_raw_data_from_json(feedId, username):
+    raw = requests.get('https://www.instagram.com/'+username+'/?__a=1')
+    raw.raise_for_status()
+    return json.loads(raw.text)['graphql']['user']['edge_owner_to_timeline_media']['edges']
+
+
+def _date_from_edge(edge):
+    return datetime.fromtimestamp(edge['node']['taken_at_timestamp'])
+
+
+def _caption_from_edge(edge):
+    if len(edge['node']['edge_media_to_caption']['edges'])!=0:
+        return edge['node']['edge_media_to_caption']['edges'][0]['node']['text']
+    return ''
+
+
+def _shortcode_from_edge(edge):
+    return edge['node']['shortcode']
 
 
 @valid_account_query_params
 def get_last_posts(feedId, username, numberOfPosts=numbOfPostsDef):
     logger.debug(str(feedId)+', '+username+', getting last posts')
-    posts = _get_posts(feedId, username, numberOfPosts)
+    rawData = _get_raw_data_from_json(feedId, username)
     postsLinks = []
     dates = []
-    for post in posts:
-        if _is_newer(feedId, username, post.date) and (_is_all_enabled(feedId, username) or _contains_any_keyword(feedId, username, post.caption)):
-            postsLinks.append(postLinkStr+post.shortcode)
-            dates.append(post.date)
+    for edge in rawData:
+        date = _date_from_edge(edge)
+        caption = _caption_from_edge(edge)
+        if _is_newer(feedId, username, date) and (_is_all_enabled(feedId, username) or _contains_any_keyword(feedId, username, caption)):
+            shortcode = _shortcode_from_edge(edge)
+            postsLinks.append(postLinkStr+shortcode)
+            dates.append(date)
     _update_date(feedId, username, dates)
-    return postsLinks
+    return postsLinks[:numbOfPostsDef]
 
 
 @valid_account_query_params
 def get_last_n_posts(feedId, username, nToGet=nToGetDef):
     logger.debug(str(feedId)+', '+username+', getting last n posts')
-    posts = _get_posts(feedId, username, nToGet)
-    return [postLinkStr+post.shortcode for post in posts][:nToGet]
+    rawData = _get_raw_data_from_json(feedId, username)
+    postsLinks = []
+    for edge in rawData:
+        shortcode = _shortcode_from_edge(edge)
+        postsLinks.append(postLinkStr+shortcode)
+    return postsLinks[:nToGet]

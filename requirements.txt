@@ -1,3 +1,2 @@
 python-telegram-bot==11.1.0
-instaloader==4.2.8
 pony==0.7.10
